@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traiano Booking</title>
+    
+    <link rel="stylesheet" href="./css/reset.css">
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+	<script src="./script/core.js"></script>
+
+  </head>
+  <body onload="initializeApp()">
+    <h1>Prenotazioni</h1>
+    <div class="tabbar">
+         <button id="listViewBtn" class="tabButton active" onclick="showListView()">Lista</button>
+         <button id="calendarViewBtn" class="tabButton" onclick="showCalendarView()">Calendario</button>
+    </div>
+
+    <div class="content">
+        <div id="listView" class="view active">
+            list view
+        </div>
+
+        <div id="calendarView" class="view">
+            <!-- Il calendario verrà generato qui dinamicamente -->
+            calendar view
+        </div>
+
+    </div>
+
+  </body>
+</html>
