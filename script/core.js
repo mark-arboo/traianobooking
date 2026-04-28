@@ -247,6 +247,8 @@ function showDayDetails(dateString, bookings) {
     
     if (bookings.length === 0) {
         detailsContainer.innerHTML = `<p class="no-bookings">Nessuna prenotazione per il ${dateString}</p>`;
+        // Scroll al div dei dettagli
+        detailsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
     }
     
@@ -262,7 +264,7 @@ function showDayDetails(dateString, bookings) {
             <p><i class="fa fa-user-o" aria-hidden="true"></i> ${booking['Numero Ospiti']} ${booking['Numero Ospiti'].toString().length === 1 ? 'Ospiti' : ''}</p>
             <p><i class="fa fa-percent" aria-hidden="true"></i> ${booking['Tassa di soggiorno'] && booking.hasOwnProperty('Tassa di soggiorno') ? formatEuro(booking['Tassa di soggiorno']) + ' € Tassa di soggiorno' : 'No Tax'}</p>
             <p><i class="fa fa-sticky-note-o" aria-hidden="true"></i> ${booking.Note && booking.hasOwnProperty("Note") ? booking.Note : ' - '}</p>
-            <div class="logo"><img src="/img/${booking.channel}.png" alt="Logo" width="30"></div>
+            <div class="logo"><img src="./img/${booking.channel}.png" alt="Logo" width="30"></div>
             <div class="pay">
                 <span class="lordo">${booking['Guadagno Lordo'] && booking.hasOwnProperty('Guadagno Lordo') ? formatEuro(booking['Guadagno Lordo']) + ' € /' : ''}</span>
                 <span class="netto">${booking['Guadagno Netto'] && booking.hasOwnProperty('Guadagno Netto') ? formatEuro(booking['Guadagno Netto']) + ' €' : ''}</span>
@@ -270,6 +272,9 @@ function showDayDetails(dateString, bookings) {
         `;
         detailsContainer.appendChild(bookingCard);
     });
+    
+    // Scroll al div dei dettagli
+    detailsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function previousMonth() {
