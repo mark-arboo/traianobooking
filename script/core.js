@@ -76,8 +76,6 @@ function onFirstLoad() {
             // ordina l'arrayBooking per data di arrivo (campo Check-in)
             arrayBooking.sort((a, b) => parseItalianDate(a['Check-in']) - parseItalianDate(b['Check-in']));
 
-            console.log(arrayBooking);
-
             sessionStorage.setItem('arrayBooking', JSON.stringify(arrayBooking));
     
             showListView(); // Mostra la vista lista all'avvio dell'app
