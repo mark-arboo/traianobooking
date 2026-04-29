@@ -2,43 +2,45 @@ let arrayBooking = [];
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
 
-// Funzione per convertire i numeri seriali di Excel in date leggibili
-function excelDateToJSDate(serial) {
-    if (!serial || typeof serial !== 'number') return serial;
-    // Excel memorizza le date come giorni dal 1° gennaio 1900
-    const utc_days = Math.floor(serial - 25569);
-    const utc_value = utc_days * 86400;
-    const date_info = new Date(utc_value * 1000);
+/**
+ * Controlla se è la prima volta che l'applicazione viene caricata
+ * o se è un refresh di pagina
+ * @returns {boolean} true se è la prima volta, false se è un refresh
+ */
+function isFirstLoad() {
+    // Verifica usando Navigation API moderna
+    const navigationEntries = performance.getEntriesByType('navigation');
+    let isRefresh = false;
     
-    // Formatta la data come gg/mm/aaaa
-    const day = String(date_info.getDate()).padStart(2, '0');
-    const month = String(date_info.getMonth() + 1).padStart(2, '0');
-    const year = date_info.getFullYear();
+    if (navigationEntries.length > 0) {
+        const navEntry = navigationEntries[0];
+        isRefresh = navEntry.type === 'reload';
+    } else {
+        // Fallback per browser più vecchi
+        isRefresh = performance.navigation && performance.navigation.type === performance.navigation.TYPE_RELOAD;
+    }
     
-    return `${day}/${month}/${year}`;
+    // Verifica anche il sessionStorage per distinguere tra nuova sessione e refresh
+    const hasSessionData = sessionStorage.getItem('appLoaded');
+    
+    if (!hasSessionData && !isRefresh) {
+        // Prima volta in questa sessione
+        sessionStorage.setItem('appLoaded', 'true');
+        return true;
+    }
+    
+    return false;
 }
 
-// Funzione per convertire stringa "gg/mm/aaaa" in oggetto Date per ordinamento
-function parseItalianDate(dateString) {
-    if (!dateString || typeof dateString !== 'string') return new Date(0);
-    const parts = dateString.split('/');
-    if (parts.length !== 3) return new Date(0);
-    // new Date(year, month, day) - month è 0-based
-    return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-}
 
-// Funzione per formattare numeri in formato euro (es: 1.234,56)
-function formatEuro(number) {
-    if (!number || isNaN(number)) return '0,00';
-    return new Intl.NumberFormat('it-IT', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    }).format(number);
-}
 
-function initializeApp() {
 
-    // legge il primo e secondo sheet di un file excel letto da una URL 
+/**
+ * Logica eseguita al primo caricamento
+ */
+function onFirstLoad() {
+ 
+    // legge i primi 3 sheet di un file excel letto da una URL 
     const url = 'https://docs.google.com/spreadsheets/d/1eZ2t1dVZqAiZTflLigA9y8sHzbXSVdISgmlCt8MeOyk/export?format=xlsx';
     fetch(url)
         .then(response => response.arrayBuffer())
@@ -76,10 +78,54 @@ function initializeApp() {
 
             console.log(arrayBooking);
 
+            sessionStorage.setItem('arrayBooking', JSON.stringify(arrayBooking));
+    
             showListView(); // Mostra la vista lista all'avvio dell'app
         })
         .catch(error => console.error('Errore durante il caricamento del file Excel:', error));
 
+}
+
+/**
+ * Logica eseguita durante il refresh
+ */
+function onPageRefresh() {
+    // Qui puoi aggiungere logica per il refresh
+    // Ad esempio: ripristinare stato, saltare intro, etc.
+    
+    // Controlla se c'era un pannello salvato
+    const lastPanel = sessionStorage.getItem('lastActivePanel');
+
+    if (sessionStorage.getItem('arrayBooking')) {
+        arrayBooking = JSON.parse(sessionStorage.getItem('arrayBooking'));
+    }
+    
+    if (lastPanel) {
+        switch(lastPanel) {
+            case 'calendario':
+                showCalendarView();
+                break;
+            case 'lista':
+                showListView();
+                break;
+            default:
+                showListView();
+        }
+    } else {
+        showListView();
+    }
+}
+
+
+
+
+function initializeApp() {
+
+    if (isFirstLoad()) {
+        onFirstLoad();
+    } else {
+        onPageRefresh();
+    }
 
 }
 
@@ -124,6 +170,8 @@ function showListView() {
     // Mostra la vista lista e nasconde la vista calendario
     document.getElementById('listView').classList.add('active');
     document.getElementById('calendarView').classList.remove('active');
+
+    sessionStorage.setItem('lastActivePanel', 'lista');
     
 }
 
@@ -138,6 +186,8 @@ function showCalendarView() {
     // Mostra la vista calendario e nasconde la vista lista
     document.getElementById('calendarView').classList.add('active');
     document.getElementById('listView').classList.remove('active');
+
+    sessionStorage.setItem('lastActivePanel', 'calendario');
 }
 
 function renderCalendar() {
@@ -198,11 +248,17 @@ function renderCalendar() {
         const bookingsForDay = getBookingsForDate(currentDate, dateString);
         const hasCheckOut = hasCheckOutOnDate(currentDate, dateString);
         
-        if (bookingsForDay.length > 0) {
+        if (hasCheckOut && bookingsForDay.length > 0) {
+            // Checkout + prenotazione attiva = gradiente arancione-rosso
+            dayCell.classList.add('checkout-occupied');
+        } else if (hasCheckOut && bookingsForDay.length === 0) {
+            // Checkout + nessuna prenotazione = gradiente arancione-verde
+            dayCell.classList.add('checkout-free');
+        } else if (bookingsForDay.length > 0) {
+            // Solo prenotazione attiva = rosso normale
             dayCell.classList.add('occupied');
-        } else if (hasCheckOut) {
-            dayCell.classList.add('checkout');
         } else {
+            // Giorno libero = verde normale
             dayCell.classList.add('free');
         }
         
@@ -293,4 +349,41 @@ function nextMonth() {
         currentYear++;
     }
     renderCalendar();
+}
+
+
+
+
+// Funzione per convertire i numeri seriali di Excel in date leggibili
+function excelDateToJSDate(serial) {
+    if (!serial || typeof serial !== 'number') return serial;
+    // Excel memorizza le date come giorni dal 1° gennaio 1900
+    const utc_days = Math.floor(serial - 25569);
+    const utc_value = utc_days * 86400;
+    const date_info = new Date(utc_value * 1000);
+    
+    // Formatta la data come gg/mm/aaaa
+    const day = String(date_info.getDate()).padStart(2, '0');
+    const month = String(date_info.getMonth() + 1).padStart(2, '0');
+    const year = date_info.getFullYear();
+    
+    return `${day}/${month}/${year}`;
+}
+
+// Funzione per convertire stringa "gg/mm/aaaa" in oggetto Date per ordinamento
+function parseItalianDate(dateString) {
+    if (!dateString || typeof dateString !== 'string') return new Date(0);
+    const parts = dateString.split('/');
+    if (parts.length !== 3) return new Date(0);
+    // new Date(year, month, day) - month è 0-based
+    return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+}
+
+// Funzione per formattare numeri in formato euro (es: 1.234,56)
+function formatEuro(number) {
+    if (!number || isNaN(number)) return '0,00';
+    return new Intl.NumberFormat('it-IT', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(number);
 }

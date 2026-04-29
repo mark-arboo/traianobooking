@@ -7,6 +7,7 @@ body {
   background-color: #f0f0f0;
   font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   padding: 10px;
+  color: #333;
 }
 
 h1 {
@@ -37,7 +38,6 @@ p {
 
 .tabButton {
     background-color: var(--color-tabbar-background);
-    color: #000;
     border: none; 
     border-radius: 10px; 
     padding: 15px;
@@ -49,7 +49,6 @@ p {
 
 button.active {
     background-color: var(--color-button-active-background);
-    color: #000;
     font-weight: bold;
   }
 
@@ -183,14 +182,24 @@ button.active {
 }
 
 .calendar-day.checkout {
-  /* background-color: #f39c12; */
-  background-color: #27ae60;
+  background-color: #f39c12;
+  /* background-color: #27ae60; */
   color: white;
 }
 
 .calendar-day.free {
   background-color: #27ae60;
   color: white;
+}
+
+.checkout-occupied {
+    background: linear-gradient(120deg, #ff9800 50%, #f44336 50%);
+    /* Gradiente arancione-rosso */
+}
+
+.checkout-free {
+    background: linear-gradient(120deg, #ff9800 50%, #4caf50 50%);
+    /* Gradiente arancione-verde */
 }
 
 .day-number {
@@ -207,7 +216,6 @@ button.active {
   font-size: 20px;
   font-weight: bold;
   margin-bottom: 15px;
-  color: #333;
 }
 
 .no-bookings {
@@ -226,5 +234,5 @@ button.active {
   margin-bottom: 10px;
   border-radius: 5px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  font-size: 14px;
+  font-size: 16px;
 }
