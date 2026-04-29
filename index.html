@@ -2,7 +2,17 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <!-- Collegamento al Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Icona per iOS (Safari non legge bene il manifest per l'icona home) -->
+    <link rel="apple-touch-icon" href="logo.png">
+
+    <!-- Colore della barra di stato su mobile -->
+    <meta name="theme-color" content="#000000">
+
     <title>Traiano Booking</title>
     
     <link rel="stylesheet" href="./css/reset.css">
@@ -10,7 +20,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-	<script src="./script/core.js"></script>
+	  <script src="./script/core.js"></script>
 
   </head>
   <body onload="initializeApp()">

@@ -1,0 +1,21 @@
+{
+  "short_name": "TraianoBooking",
+  "name": "TraianoBooking",
+  "icons": [
+    {
+      "src": "img/logo.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "img/logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/traianobooking/index.html",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "scope": "/traianobooking/",
+  "theme_color": "#000000"
+}
