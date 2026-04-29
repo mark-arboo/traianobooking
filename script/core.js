@@ -244,6 +244,14 @@ function renderCalendar() {
         const currentDate = new Date(currentYear, currentMonth, day);
         const dateString = `${String(day).padStart(2, '0')}/${String(currentMonth + 1).padStart(2, '0')}/${currentYear}`;
         
+        // Verifica se è il giorno corrente
+        const today = new Date();
+        if (currentDate.getDate() === today.getDate() && 
+            currentDate.getMonth() === today.getMonth() && 
+            currentDate.getFullYear() === today.getFullYear()) {
+            dayCell.classList.add('today');
+        }
+        
         // Determina lo stato del giorno
         const bookingsForDay = getBookingsForDate(currentDate, dateString);
         const hasCheckOut = hasCheckOutOnDate(currentDate, dateString);

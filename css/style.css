@@ -211,6 +211,11 @@ button.active {
   margin-bottom: 5px;
 }
 
+.calendar-day.today {
+  border: 3px solid #007bff;
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+}
+
 .day-details {
   margin-top: 20px;
 }
