@@ -46,11 +46,13 @@ p {
     min-width: 49%;
     font-size: 18px;
     cursor: pointer;
+    color: #333;
   }
 
 button.active {
     background-color: var(--color-button-active-background);
     font-weight: bold;
+    color: #333;
 }
 
 
