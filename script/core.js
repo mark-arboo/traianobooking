@@ -333,7 +333,46 @@ function printCard(component, booking) {
                 <span class="netto">${booking['Guadagno Netto'] && booking.hasOwnProperty('Guadagno Netto') ? formatEuro(booking['Guadagno Netto']) + ' €' : ''}</span>
             </div>
         `;
+        
+        // Aggiungi l'event listener dopo aver creato l'HTML
+        const payElement = component.querySelector('.pay');
+        payElement.addEventListener('click', function() {
+            showHidePayDetails(this, booking);
+        });
 }
+
+function showHidePayDetails(element, booking) {
+
+    const noLordo = "-- /";
+    const noNetto = " -- €";
+    
+    // Trova tutti gli elementi .pay nella pagina
+    const allPayElements = document.querySelectorAll('.pay');
+    
+    // Controlla lo stato del primo elemento per decidere l'azione
+    const firstLordo = allPayElements[0].querySelector('.lordo');
+    const isCurrentlyHidden = firstLordo.innerHTML === noLordo;
+    
+    if (isCurrentlyHidden) {
+        // Mostra tutti i dati - rigenera la vista corrente
+        if (document.getElementById('listView').classList.contains('active')) {
+            showListView();
+        } else if (document.getElementById('calendarView').classList.contains('active')) {
+            showCalendarView();
+        }
+    } else {
+        // Nascondi tutti i dati
+        allPayElements.forEach(payElement => {
+            const lordo = payElement.querySelector('.lordo');
+            const netto = payElement.querySelector('.netto');
+            if (lordo && netto) {
+                lordo.innerHTML = noLordo;
+                netto.innerHTML = noNetto;
+            }
+        });
+    }
+}
+
 
 function previousMonth() {
     currentMonth--;
