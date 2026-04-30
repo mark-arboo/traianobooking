@@ -331,46 +331,38 @@ function printCard(component, booking) {
             <div class="pay">
                 <span class="lordo">${booking['Guadagno Lordo'] && booking.hasOwnProperty('Guadagno Lordo') ? formatEuro(booking['Guadagno Lordo']) + ' € /' : ''}</span>
                 <span class="netto">${booking['Guadagno Netto'] && booking.hasOwnProperty('Guadagno Netto') ? formatEuro(booking['Guadagno Netto']) + ' €' : ''}</span>
+                <span class="noLordo" style="display:none;"> -- /</span>
+                <span class="noNetto" style="display:none;"> -- €</span>
             </div>
         `;
         
         // Aggiungi l'event listener dopo aver creato l'HTML
         const payElement = component.querySelector('.pay');
         payElement.addEventListener('click', function() {
-            showHidePayDetails(this, booking);
+            showHidePayDetails();
         });
 }
 
-function showHidePayDetails(element, booking) {
+function showHidePayDetails() {
 
-    const noLordo = "-- /";
-    const noNetto = " -- €";
-    
-    // Trova tutti gli elementi .pay nella pagina
-    const allPayElements = document.querySelectorAll('.pay');
-    
-    // Controlla lo stato del primo elemento per decidere l'azione
-    const firstLordo = allPayElements[0].querySelector('.lordo');
-    const isCurrentlyHidden = firstLordo.innerHTML === noLordo;
-    
-    if (isCurrentlyHidden) {
-        // Mostra tutti i dati - rigenera la vista corrente
-        if (document.getElementById('listView').classList.contains('active')) {
-            showListView();
-        } else if (document.getElementById('calendarView').classList.contains('active')) {
-            showCalendarView();
-        }
+    // Verificare se le classi .noLordo sono attualmente nascoste o visibili
+    const lordoElements = document.querySelectorAll('.lordo');
+    const isCurrentlyHidden = lordoElements.length > 0 && lordoElements[0].style.display === 'none';
+
+     if (isCurrentlyHidden) {
+        // Mostra tutti i dati - visualizzando gli elementi con classi .lordo e .netto e nascondendo quelli con classi .noLordo e .noNetto
+        document.querySelectorAll('.lordo').forEach(el => el.style.display = 'inline');
+        document.querySelectorAll('.netto').forEach(el => el.style.display = 'inline');
+        document.querySelectorAll('.noLordo').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.noNetto').forEach(el => el.style.display = 'none');
     } else {
-        // Nascondi tutti i dati
-        allPayElements.forEach(payElement => {
-            const lordo = payElement.querySelector('.lordo');
-            const netto = payElement.querySelector('.netto');
-            if (lordo && netto) {
-                lordo.innerHTML = noLordo;
-                netto.innerHTML = noNetto;
-            }
-        });
+        // Nascondi tutti i dati - visualizzando gli elementi con classi .noLordo e .noNetto e nascondendo quelli con classi .lordo e .netto
+        document.querySelectorAll('.lordo').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.netto').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.noLordo').forEach(el => el.style.display = 'inline');
+        document.querySelectorAll('.noNetto').forEach(el => el.style.display = 'inline');
     }
+
 }
 
 

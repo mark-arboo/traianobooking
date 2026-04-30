@@ -99,11 +99,11 @@ button.active {
   font-weight: bold;
 }
 
-.lordo {
+.lordo, .noLordo {
   color: #e74c3c; 
 }
 
-.netto {
+.netto, .noNetto {
   color: #27ae60; 
 }
 
