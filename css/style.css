@@ -41,18 +41,16 @@ p {
     background-color: var(--color-tabbar-background);
     border: none; 
     border-radius: 10px; 
-    padding: 15px;
+    padding: 10px;
     min-height: 30px; 
     min-width: 49%;
     font-size: 18px;
     cursor: pointer;
-    color: #333;
   }
 
 button.active {
     background-color: var(--color-button-active-background);
     font-weight: bold;
-    color: #333;
 }
 
 
