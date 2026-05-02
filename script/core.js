@@ -1,4 +1,4 @@
-let arrayBooking = [];
+﻿let arrayBooking = [];
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
 
@@ -138,6 +138,8 @@ function showGraphicView() {
     // Aggiunge la classe active al pulsante Grafico
     document.getElementById('graphicViewBtn').classList.add('active');
 
+  
+  
     // Mostra la vista grafico e nasconde le altre viste
     document.getElementById('graphicView').classList.add('active');
     document.getElementById('listView').classList.remove('active');
@@ -145,6 +147,10 @@ function showGraphicView() {
 
     sessionStorage.setItem('lastActivePanel', 'grafico');
 }
+
+
+
+
 
 function showListView() {
 
