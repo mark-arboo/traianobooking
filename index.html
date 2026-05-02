@@ -25,10 +25,20 @@
   </head>
   <body onload="initializeApp()">
     <h1>Prenotazioni</h1>
+    
     <div class="tabbar">
-         <button id="listViewBtn" class="tabButton active" onclick="showListView()">Lista</button>
-         <button id="calendarViewBtn" class="tabButton" onclick="showCalendarView()">Calendario</button>
-         <button id="graphicViewBtn" class="tabButton" onclick="showGraphicView()">Report  </button>
+         <button id="listViewBtn" class="tabButton active" onclick="showListView()">
+            <i class="fa fa-list" aria-hidden="true"></i>
+            <span>Prenotazioni</span>
+         </button>
+         <button id="calendarViewBtn" class="tabButton" onclick="showCalendarView()">
+            <i class="fa fa-calendar" aria-hidden="true"></i>
+            <span>Disponibilità</span>
+         </button>
+         <button id="graphicViewBtn" class="tabButton" onclick="showGraphicView()">
+            <i class="fa fa-bar-chart" aria-hidden="true"></i>
+            <span>Report</span>
+         </button>
     </div>
 
     <div class="content">

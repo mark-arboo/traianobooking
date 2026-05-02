@@ -138,6 +138,9 @@ function showGraphicView() {
     // Aggiunge la classe active al pulsante Grafico
     document.getElementById('graphicViewBtn').classList.add('active');
 
+    // Aggiorna il titolo
+    document.querySelector('h1').textContent = 'Report';
+
     renderGraphicView();
   
     // Mostra la vista grafico e nasconde le altre viste
@@ -288,6 +291,9 @@ function showListView() {
     document.getElementById('graphicViewBtn').classList.remove('active');
     // Aggiunge la classe active al pulsante Lista
     document.getElementById('listViewBtn').classList.add('active');
+
+    // Aggiorna il titolo
+    document.querySelector('h1').textContent = 'Prenotazioni';
  
     // svuota la visualizzazione precedente
     const listView = document.getElementById('listView');
@@ -348,6 +354,9 @@ function showCalendarView() {
     document.getElementById('graphicViewBtn').classList.remove('active');
     // Aggiunge la classe active al pulsante Calendario
     document.getElementById('calendarViewBtn').classList.add('active');
+
+    // Aggiorna il titolo
+    document.querySelector('h1').textContent = 'Disponibilità';
     
     renderCalendar();
 
