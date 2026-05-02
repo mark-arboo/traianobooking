@@ -227,9 +227,9 @@ function renderGraphicView() {
     // Calcola la revenue annuale
     const yearlyRevenue = calculateYearlyRevenue(currentYear);
 
-    // Crea la visualizzazione
+    // Crea la visualizzazione con due card separate
     statsContainer.innerHTML = `
-        <div class="revenue-section">
+        <div class="stats-card">
             <h3>Revenue per Canale</h3>
             <div class="revenue-item">
                 <img src="./img/booking.png" alt="Booking" class="channel-logo">
@@ -259,6 +259,9 @@ function renderGraphicView() {
             <div class="booking-count">
                 <p>Numero prenotazioni: <strong>${bookingsInMonth.length}</strong></p>
             </div>
+        </div>
+        
+        <div class="stats-card yearly-card">
             <div class="yearly-revenue">
                 <i class="fa fa-line-chart" aria-hidden="true"></i>
                 <div class="yearly-info">

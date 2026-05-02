@@ -289,18 +289,29 @@ button.active {
 
 /* Stili per la vista grafico/report */
 .stats-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.stats-card {
   background-color: #fff;
   padding: 20px;
   border-radius: 5px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.revenue-section h3 {
+.stats-card h3 {
   font-size: 22px;
   font-weight: bold;
   margin-bottom: 20px;
   text-align: center;
   color: #333;
+}
+
+.yearly-card {
+  padding: 0;
+  overflow: hidden;
 }
 
 .revenue-item {
@@ -382,9 +393,8 @@ button.active {
   align-items: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 20px;
-  border-radius: 8px;
-  margin-top: 20px;
+  padding: 25px;
+  border-radius: 5px;
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
 
