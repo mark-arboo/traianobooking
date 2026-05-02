@@ -221,8 +221,11 @@ function renderGraphicView() {
         }
     });
 
-    // Calcola il totale
+    // Calcola il totale mensile
     const totalRevenue = revenueByChannel.booking + revenueByChannel.airbnb + revenueByChannel.black;
+
+    // Calcola la revenue annuale
+    const yearlyRevenue = calculateYearlyRevenue(currentYear);
 
     // Crea la visualizzazione
     statsContainer.innerHTML = `
@@ -256,6 +259,13 @@ function renderGraphicView() {
             <div class="booking-count">
                 <p>Numero prenotazioni: <strong>${bookingsInMonth.length}</strong></p>
             </div>
+            <div class="yearly-revenue">
+                <i class="fa fa-line-chart" aria-hidden="true"></i>
+                <div class="yearly-info">
+                    <p class="yearly-label">Revenue Annuale ${currentYear}</p>
+                    <p class="yearly-amount">${formatEuro(yearlyRevenue)} €</p>
+                </div>
+            </div>
         </div>
     `;
 
@@ -278,6 +288,52 @@ function nextMonthGraphic() {
         currentYear++;
     }
     renderGraphicView();
+}
+
+function calculateYearlyRevenue(year) {
+    let totalYearRevenue = 0;
+    
+    // Itera su tutti i 12 mesi dell'anno
+    for (let month = 0; month < 12; month++) {
+        const monthStart = new Date(year, month, 1);
+        const monthEnd = new Date(year, month + 1, 0);
+        monthEnd.setHours(23, 59, 59, 999);
+        
+        // Filtra le prenotazioni per il mese
+        const bookingsInMonth = arrayBooking.filter(booking => {
+            const checkin = parseItalianDate(booking['Check-in']);
+            const checkout = parseItalianDate(booking['Check-out']);
+            
+            return (checkin >= monthStart && checkin <= monthEnd) || 
+                   (checkout >= monthStart && checkout <= monthEnd) ||
+                   (checkin <= monthStart && checkout >= monthEnd);
+        });
+        
+        // Calcola la revenue per questo mese
+        bookingsInMonth.forEach(booking => {
+            const guadagnoNetto = booking['Guadagno Netto'] || 0;
+            const notti = booking.Notti || 0;
+            
+            if (notti > 0) {
+                const checkin = parseItalianDate(booking['Check-in']);
+                const checkout = parseItalianDate(booking['Check-out']);
+                
+                // Calcola quanti giorni della prenotazione ricadono nel mese corrente
+                const effectiveStart = checkin > monthStart ? checkin : monthStart;
+                const effectiveEnd = checkout < monthEnd ? checkout : monthEnd;
+                
+                // Calcola il numero di giorni nel mese
+                const daysInMonth = Math.ceil((effectiveEnd - effectiveStart) / (1000 * 60 * 60 * 24));
+                
+                // Calcola il guadagno proporzionale
+                const proportionalRevenue = (guadagnoNetto / notti) * daysInMonth;
+                
+                totalYearRevenue += proportionalRevenue;
+            }
+        });
+    }
+    
+    return totalYearRevenue;
 }
 
 
