@@ -265,3 +265,93 @@ button.active {
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   font-size: 16px;
 }
+
+/* Stili per la vista grafico/report */
+.stats-container {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.revenue-section h3 {
+  font-size: 22px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  text-align: center;
+  color: #333;
+}
+
+.revenue-item {
+  display: flex;
+  align-items: center;
+  background-color: #f9f9f9;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 5px;
+  border-left: 4px solid #007bff;
+}
+
+.channel-logo {
+  width: 50px;
+  height: 50px;
+  margin-right: 15px;
+  object-fit: contain;
+}
+
+.channel-info {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.channel-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.channel-revenue {
+  font-size: 22px;
+  font-weight: bold;
+  color: #27ae60;
+  margin: 0;
+}
+
+.revenue-total {
+  background-color: #007bff;
+  color: white;
+  padding: 20px;
+  border-radius: 5px;
+  margin-top: 25px;
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.total-label {
+  font-size: 20px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.total-revenue {
+  font-size: 28px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.booking-count {
+  text-align: center;
+  font-size: 16px;
+  color: #666;
+  padding: 10px;
+}
+
+.booking-count strong {
+  color: #007bff;
+  font-size: 20px;
+}

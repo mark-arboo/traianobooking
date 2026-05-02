@@ -138,7 +138,7 @@ function showGraphicView() {
     // Aggiunge la classe active al pulsante Grafico
     document.getElementById('graphicViewBtn').classList.add('active');
 
-  
+    renderGraphicView();
   
     // Mostra la vista grafico e nasconde le altre viste
     document.getElementById('graphicView').classList.add('active');
@@ -146,6 +146,135 @@ function showGraphicView() {
     document.getElementById('calendarView').classList.remove('active');
 
     sessionStorage.setItem('lastActivePanel', 'grafico');
+}
+
+function renderGraphicView() {
+    const graphicContainer = document.getElementById('graphicView');
+    graphicContainer.innerHTML = ''; // Pulisce il contenitore
+    
+    // Crea l'header con navigazione
+    const header = document.createElement('div');
+    header.className = 'calendar-header';
+    const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 
+                        'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+    header.innerHTML = `
+        <button class="nav-button" onclick="previousMonthGraphic()">◀</button>
+        <h2>${monthNames[currentMonth]} ${currentYear}</h2>
+        <button class="nav-button" onclick="nextMonthGraphic()">▶</button>
+    `;
+    graphicContainer.appendChild(header);
+
+    // Contenitore per le statistiche
+    const statsContainer = document.createElement('div');
+    statsContainer.className = 'stats-container';
+
+    // Filtra le prenotazioni per il mese corrente
+    const bookingsInMonth = arrayBooking.filter(booking => {
+        const checkin = parseItalianDate(booking['Check-in']);
+        const checkout = parseItalianDate(booking['Check-out']);
+        
+        // Considera una prenotazione se ha almeno un giorno nel mese corrente
+        const monthStart = new Date(currentYear, currentMonth, 1);
+        const monthEnd = new Date(currentYear, currentMonth + 1, 0);
+        monthEnd.setHours(23, 59, 59, 999);
+        
+        return (checkin >= monthStart && checkin <= monthEnd) || 
+               (checkout >= monthStart && checkout <= monthEnd) ||
+               (checkin <= monthStart && checkout >= monthEnd);
+    });
+
+    // Calcola le somme per channel con ripartizione proporzionale
+    const revenueByChannel = {
+        booking: 0,
+        airbnb: 0,
+        black: 0
+    };
+
+    // Definisce i limiti del mese corrente
+    const monthStart = new Date(currentYear, currentMonth, 1);
+    const monthEnd = new Date(currentYear, currentMonth + 1, 0);
+    monthEnd.setHours(23, 59, 59, 999);
+
+    bookingsInMonth.forEach(booking => {
+        const guadagnoNetto = booking['Guadagno Netto'] || 0;
+        const notti = booking.Notti || 0;
+        const channel = booking.channel || 'unknown';
+        
+        if (notti > 0 && revenueByChannel.hasOwnProperty(channel)) {
+            const checkin = parseItalianDate(booking['Check-in']);
+            const checkout = parseItalianDate(booking['Check-out']);
+            
+            // Calcola quanti giorni della prenotazione ricadono nel mese corrente
+            const effectiveStart = checkin > monthStart ? checkin : monthStart;
+            const effectiveEnd = checkout < monthEnd ? checkout : monthEnd;
+            
+            // Calcola il numero di giorni nel mese corrente
+            const daysInMonth = Math.ceil((effectiveEnd - effectiveStart) / (1000 * 60 * 60 * 24));
+            
+            // Calcola il guadagno proporzionale
+            const proportionalRevenue = (guadagnoNetto / notti) * daysInMonth;
+            
+            revenueByChannel[channel] += proportionalRevenue;
+        }
+    });
+
+    // Calcola il totale
+    const totalRevenue = revenueByChannel.booking + revenueByChannel.airbnb + revenueByChannel.black;
+
+    // Crea la visualizzazione
+    statsContainer.innerHTML = `
+        <div class="revenue-section">
+            <h3>Revenue per Canale</h3>
+            <div class="revenue-item">
+                <img src="./img/booking.png" alt="Booking" class="channel-logo">
+                <div class="channel-info">
+                    <p class="channel-name">Booking.com</p>
+                    <p class="channel-revenue">${formatEuro(revenueByChannel.booking)} €</p>
+                </div>
+            </div>
+            <div class="revenue-item">
+                <img src="./img/airbnb.png" alt="Airbnb" class="channel-logo">
+                <div class="channel-info">
+                    <p class="channel-name">Airbnb</p>
+                    <p class="channel-revenue">${formatEuro(revenueByChannel.airbnb)} €</p>
+                </div>
+            </div>
+            <div class="revenue-item">
+                <img src="./img/black.png" alt="Black" class="channel-logo">
+                <div class="channel-info">
+                    <p class="channel-name">Altro</p>
+                    <p class="channel-revenue">${formatEuro(revenueByChannel.black)} €</p>
+                </div>
+            </div>
+            <div class="revenue-total">
+                <p class="total-label">Totale Mensile:</p>
+                <p class="total-revenue">${formatEuro(totalRevenue)} €</p>
+            </div>
+            <div class="booking-count">
+                <p>Numero prenotazioni: <strong>${bookingsInMonth.length}</strong></p>
+            </div>
+        </div>
+    `;
+
+    graphicContainer.appendChild(statsContainer);
+}
+
+function previousMonthGraphic() {
+    currentMonth--;
+    if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+    }
+    renderGraphicView();
+}
+
+function nextMonthGraphic() {
+    currentMonth++;
+    if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+    }
+    renderGraphicView();
 }
 
 
