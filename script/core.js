@@ -106,6 +106,9 @@ function onPageRefresh() {
             case 'lista':
                 showListView();
                 break;
+            case 'grafico':
+                showGraphicView();
+                break;    
             default:
                 showListView();
         }
@@ -127,9 +130,27 @@ function initializeApp() {
 
 }
 
+
+function showGraphicView() {
+    // Rimuove la classe active da tutti i pulsanti
+    document.getElementById('listViewBtn').classList.remove('active');
+    document.getElementById('calendarViewBtn').classList.remove('active');
+    // Aggiunge la classe active al pulsante Grafico
+    document.getElementById('graphicViewBtn').classList.add('active');
+
+    // Mostra la vista grafico e nasconde le altre viste
+    document.getElementById('graphicView').classList.add('active');
+    document.getElementById('listView').classList.remove('active');
+    document.getElementById('calendarView').classList.remove('active');
+
+    sessionStorage.setItem('lastActivePanel', 'grafico');
+}
+
 function showListView() {
+
     // Rimuove la classe active da tutti i pulsanti
     document.getElementById('calendarViewBtn').classList.remove('active');
+    document.getElementById('graphicViewBtn').classList.remove('active');
     // Aggiunge la classe active al pulsante Lista
     document.getElementById('listViewBtn').classList.add('active');
  
@@ -163,9 +184,10 @@ function showListView() {
         document.getElementById('listView').appendChild(bookingDiv);
     });
 
-    // Mostra la vista lista e nasconde la vista calendario
+    // Mostra la vista lista e nasconde le altre viste  
     document.getElementById('listView').classList.add('active');
     document.getElementById('calendarView').classList.remove('active');
+    document.getElementById('graphicView').classList.remove('active');
 
     sessionStorage.setItem('lastActivePanel', 'lista');
     
@@ -188,14 +210,16 @@ function filterBookings(input) {
 function showCalendarView() {
     // Rimuove la classe active da tutti i pulsanti
     document.getElementById('listViewBtn').classList.remove('active');
+    document.getElementById('graphicViewBtn').classList.remove('active');
     // Aggiunge la classe active al pulsante Calendario
     document.getElementById('calendarViewBtn').classList.add('active');
     
     renderCalendar();
 
-    // Mostra la vista calendario e nasconde la vista lista
+    // Mostra la vista calendario e nasconde le altre viste
     document.getElementById('calendarView').classList.add('active');
     document.getElementById('listView').classList.remove('active');
+    document.getElementById('graphicView').classList.remove('active');
 
     sessionStorage.setItem('lastActivePanel', 'calendario');
 }

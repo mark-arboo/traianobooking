@@ -28,17 +28,23 @@
     <div class="tabbar">
          <button id="listViewBtn" class="tabButton active" onclick="showListView()">Lista</button>
          <button id="calendarViewBtn" class="tabButton" onclick="showCalendarView()">Calendario</button>
+         <button id="graphicViewBtn" class="tabButton" onclick="showGraphicView()">Grafico  </button>
     </div>
 
     <div class="content">
         <div id="listView" class="view active">
-            <img src="./img/loading.gif" alt="Loading..." id="loadingIndicator">
+            <img src="./img/loading.gif" alt="Loading..." id="loadingIndicator" width="50" height="50">
+             <!-- La lista delle prenotazioni verrà generata qui dinamicamente -->
         </div>
 
         <div id="calendarView" class="view">
             <!-- Il calendario verrà generato qui dinamicamente -->
             
         </div>
+
+        <div id="graphicView" class="view">
+            <!-- Il grafico verrà generato qui dinamicamente -->
+        </div>       
 
     </div>
 
