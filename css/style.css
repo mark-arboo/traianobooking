@@ -61,7 +61,14 @@ button.active {
 }
 
 .view.active {
+  display: block; 
+  min-height: auto;
+}
+
+#listView img {
   display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .content{
@@ -72,6 +79,18 @@ button.active {
   padding: 10px;
 }
 
+.search-input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-sizing: border-box;
+}
+
+
 
 .booking-item {
   position: relative;
@@ -81,7 +100,8 @@ button.active {
   border-radius: 5px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   font-size: 16px; 
-  width: 99%; 
+  width: 100%; 
+  box-sizing: border-box;
 }
 
 

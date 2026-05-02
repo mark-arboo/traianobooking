@@ -133,7 +133,9 @@ function showListView() {
     // Aggiunge la classe active al pulsante Lista
     document.getElementById('listViewBtn').classList.add('active');
  
-    document.getElementById('listView').innerHTML = ''; // Pulisce la vista lista prima di popolarla
+    // svuota la visualizzazione precedente
+    const listView = document.getElementById('listView');
+    listView.innerHTML = ''; 
     
     // Filtra solo le prenotazioni con Check-in o Check-out >= data odierna
     const today = new Date();
@@ -145,11 +147,17 @@ function showListView() {
         return checkinDate >= today || checkoutDate >= today;
     });
 
+    // inserisce una text per la ricerca rapida del nominativo, posizionata in alto prima delle card.
+    // La ricerca deve partire ad ogni lettera digitata e deve filtrare le card in base al nominativo
+    listView.innerHTML = `
+        <input type="text" class="search-input" placeholder="Cerca prenotazione" onkeyup="filterBookings(this)">
+    `; 
+
     // visualizza una div per ogni prenotazione con i campi Nominativo, Check-in, Check-out, Notti, Numero Ospiti
     filteredBookings.forEach(booking => {
         const bookingDiv = document.createElement('div');
         bookingDiv.classList.add('booking-item');
-    
+           
         printCard(bookingDiv, booking);
  
         document.getElementById('listView').appendChild(bookingDiv);
@@ -162,6 +170,20 @@ function showListView() {
     sessionStorage.setItem('lastActivePanel', 'lista');
     
 }
+
+function filterBookings(input) {
+    const filter = input.value.toLowerCase();
+    const bookingItems = document.querySelectorAll('.booking-item');
+    bookingItems.forEach(item => {
+        const nominativo = item.querySelector('p strong').textContent.toLowerCase();
+        if (nominativo.includes(filter)) {
+            item.style.display = '';
+        } else {
+            item.style.display = 'none';
+        }   
+    }); 
+}   
+
 
 function showCalendarView() {
     // Rimuove la classe active da tutti i pulsanti
