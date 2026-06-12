@@ -207,7 +207,7 @@ button.active {
 
 .calendar-day {
   background-color: #fff;
-  min-height: 80px;
+  min-height: 70px;
   padding: 5px;
   border-radius: 5px;
   cursor: pointer;
