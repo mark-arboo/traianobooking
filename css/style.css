@@ -4,8 +4,8 @@
 }
 
 body {
-  /*background-color: var(--color-tabbar-background);*/
-  background-color: #f0f0f0;
+  background-color: var(--color-tabbar-background);
+  /*background-color: #f0f0f0;*/
   font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   padding: 10px;
   padding-bottom: 80px;
@@ -192,6 +192,8 @@ button.active {
   grid-template-columns: repeat(7, 1fr);
   gap: 5px;
   margin-bottom: 20px;
+  background-color: #FFF;
+  padding: 10px;
 }
 
 .day-header {
