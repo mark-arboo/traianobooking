@@ -119,6 +119,47 @@ button.active {
   box-sizing: border-box;
 }
 
+.list-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.reload-remote-btn {
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reload-remote-btn:active {
+  transform: scale(0.98);
+}
+
+.list-actions .search-input {
+  margin-bottom: 0;
+}
+
+@media (max-width: 640px) {
+  .list-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .reload-remote-btn {
+    justify-content: center;
+  }
+}
+
 
 
 .booking-item {

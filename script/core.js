@@ -39,7 +39,22 @@ function isFirstLoad() {
  * Logica eseguita al primo caricamento
  */
 function onFirstLoad() {
- 
+
+    if (localStorage.getItem('arrayBooking')) {
+        console.log('onFirstLoad - Caricamento dati da localStorage');
+
+        arrayBooking = JSON.parse(localStorage.getItem('arrayBooking'));
+        sessionStorage.setItem('arrayBooking', localStorage.getItem('arrayBooking'));
+    
+        showListView(); // Mostra la vista lista all'avvio dell'app
+        
+    } else {
+        loadFromRemote();
+    }
+}
+
+function loadFromRemote() {
+    console.log('loadFromRemote - Caricamento dati da URL');
     // legge i primi 3 sheet di un file excel letto da una URL 
     const url = 'https://docs.google.com/spreadsheets/d/1eZ2t1dVZqAiZTflLigA9y8sHzbXSVdISgmlCt8MeOyk/export?format=xlsx';
     fetch(url)
@@ -56,6 +71,10 @@ function onFirstLoad() {
             const airbnbData = XLSX.utils.sheet_to_json(airbnbWorksheet).map(booking => ({ ...booking, channel: 'airbnb' }));
             const blackData = XLSX.utils.sheet_to_json(blackWorksheet).map(booking => ({ ...booking, channel: 'black' }));
 
+            if (arrayBooking.length > 0) {
+                // Svuoto l'arrayBooking prima di concatenare i nuovi dati
+                arrayBooking = [];
+            }
             arrayBooking = arrayBooking.concat(bookingData);
             arrayBooking = arrayBooking.concat(airbnbData);
             arrayBooking = arrayBooking.concat(blackData);
@@ -77,11 +96,11 @@ function onFirstLoad() {
             arrayBooking.sort((a, b) => parseItalianDate(a['Check-in']) - parseItalianDate(b['Check-in']));
 
             sessionStorage.setItem('arrayBooking', JSON.stringify(arrayBooking));
-    
+            localStorage.setItem('arrayBooking', JSON.stringify(arrayBooking));
+
             showListView(); // Mostra la vista lista all'avvio dell'app
         })
         .catch(error => console.error('Errore durante il caricamento del file Excel:', error));
-
 }
 
 /**
@@ -322,10 +341,16 @@ function showListView() {
         return checkinDate >= today || checkoutDate >= today;
     });
 
-    // inserisce una text per la ricerca rapida del nominativo, posizionata in alto prima delle card.
-    // La ricerca deve partire ad ogni lettera digitata e deve filtrare le card in base al nominativo
+    // Inserisce i controlli della lista: aggiornamento remoto e ricerca rapida.
+    // La ricerca parte ad ogni lettera digitata e filtra le card in base al nominativo.
     listView.innerHTML = `
-        <input type="text" class="search-input" placeholder="Cerca prenotazione" onkeyup="filterBookings(this)">
+        <div class="list-actions">
+            <button type="button" class="reload-remote-btn" onclick="loadFromRemote()">
+                <i class="fa fa-refresh" aria-hidden="true"></i>
+                Aggiorna da remoto
+            </button>
+            <input type="text" class="search-input" placeholder="Cerca prenotazione" onkeyup="filterBookings(this)">
+        </div>
     `; 
 
     // visualizza una div per ogni prenotazione con i campi Nominativo, Check-in, Check-out, Notti, Numero Ospiti
