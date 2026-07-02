@@ -1,6 +1,7 @@
 ﻿let arrayBooking = [];
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
+let cache = false;
 
 /**
  * Controlla se è la prima volta che l'applicazione viene caricata
@@ -40,7 +41,7 @@ function isFirstLoad() {
  */
 function onFirstLoad() {
 
-    if (localStorage.getItem('arrayBooking')) {
+    if (localStorage.getItem('arrayBooking') && cache) {
         console.log('onFirstLoad - Caricamento dati da localStorage');
 
         arrayBooking = JSON.parse(localStorage.getItem('arrayBooking'));
@@ -96,7 +97,8 @@ function loadFromRemote() {
             arrayBooking.sort((a, b) => parseItalianDate(a['Check-in']) - parseItalianDate(b['Check-in']));
 
             sessionStorage.setItem('arrayBooking', JSON.stringify(arrayBooking));
-            localStorage.setItem('arrayBooking', JSON.stringify(arrayBooking));
+
+            if (cache) localStorage.setItem('arrayBooking', JSON.stringify(arrayBooking));
 
             showListView(); // Mostra la vista lista all'avvio dell'app
         })

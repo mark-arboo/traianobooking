@@ -127,6 +127,7 @@ button.active {
 }
 
 .reload-remote-btn {
+  display: none; /*inline-flex;   Nascondi il pulsante per ora */
   background-color: #007bff;
   color: #fff;
   border: none;
@@ -136,7 +137,6 @@ button.active {
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  display: inline-flex;
   align-items: center;
   gap: 8px;
 }
