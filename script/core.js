@@ -1,4 +1,5 @@
-﻿let googleSheetURL = "https://docs.google.com/spreadsheets/d/1ZXO7JxQZ6u9uge8QSMYn8sNmzZ7zW7b-KXsJ_64WZe0/export?format=xlsx";
+﻿//let googleSheetURL = "https://docs.google.com/spreadsheets/d/1ZXO7JxQZ6u9uge8QSMYn8sNmzZ7zW7b-KXsJ_64WZe0/export?format=xlsx";
+let protonSheetURL = "https://drive.proton.me/urls/J3CX6BP940#nyoj0kOUUvdS";
 
 let arrayBooking = [];
 let currentMonth = new Date().getMonth();
@@ -59,7 +60,7 @@ function onFirstLoad() {
 function loadFromRemote() {
     console.log('loadFromRemote - Caricamento dati da URL');
     // legge i primi 3 sheet di un file excel letto da una URL 
-    fetch(googleSheetURL)
+    fetch(protonSheetURL)
         .then(response => response.arrayBuffer())
         .then(data => {
             const workbook = XLSX.read(data, { type: 'array' });
