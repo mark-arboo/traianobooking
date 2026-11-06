@@ -1,4 +1,6 @@
-﻿let googleSheetURL = "https://docs.google.com/spreadsheets/d/1ZXO7JxQZ6u9uge8QSMYn8sNmzZ7zW7b-KXsJ_64WZe0/export?format=xlsx";
+﻿// URL del foglio Google Sheets esportato in formato XLSX
+//let googleSheetURL = "https://docs.google.com/spreadsheets/d/1eZ2t1dVZqAiZTflLigA9y8sHzbXSVdISgmlCt8MeOyk/export?format=xlsx";
+let googleSheetURL = "https://docs.google.com/spreadsheets/d/1ZXO7JxQZ6u9uge8QSMYn8sNmzZ7zW7b-KXsJ_64WZe0/export?format=xlsx";
 
 let arrayBooking = [];
 let currentMonth = new Date().getMonth();
@@ -154,6 +156,9 @@ function initializeApp() {
 
 
 function showGraphicView() {
+
+    sessionStorage.setItem('lastActivePanel', 'grafico');
+
     // Rimuove la classe active da tutti i pulsanti
     document.getElementById('listViewBtn').classList.remove('active');
     document.getElementById('calendarViewBtn').classList.remove('active');
@@ -170,7 +175,6 @@ function showGraphicView() {
     document.getElementById('listView').classList.remove('active');
     document.getElementById('calendarView').classList.remove('active');
 
-    sessionStorage.setItem('lastActivePanel', 'grafico');
 }
 
 function renderGraphicView() {
@@ -276,8 +280,9 @@ function renderGraphicView() {
 function previousMonthGraphic() {
     currentMonth--;
     if (currentMonth < 0) {
-        currentMonth = 11;
-        currentYear--;
+        //currentMonth = 11;
+        //currentYear--;
+        currentMonth = 0;
     }
     renderGraphicView();
 }
@@ -285,8 +290,9 @@ function previousMonthGraphic() {
 function nextMonthGraphic() {
     currentMonth++;
     if (currentMonth > 11) {
-        currentMonth = 0;
-        currentYear++;
+        //currentMonth = 0;
+        //currentYear++;
+        currentMonth = 11;
     }
     renderGraphicView();
 }
@@ -320,6 +326,8 @@ function calculateYearlyRevenue(year) {
 
 
 function showListView() {
+
+    sessionStorage.setItem('lastActivePanel', 'lista');
 
     // Rimuove la classe active da tutti i pulsanti
     document.getElementById('calendarViewBtn').classList.remove('active');
@@ -371,7 +379,7 @@ function showListView() {
     document.getElementById('calendarView').classList.remove('active');
     document.getElementById('graphicView').classList.remove('active');
 
-    sessionStorage.setItem('lastActivePanel', 'lista');
+
     
 }
 
@@ -390,6 +398,8 @@ function filterBookings(input) {
 
 
 function showCalendarView() {
+    sessionStorage.setItem('lastActivePanel', 'calendario');
+
     // Rimuove la classe active da tutti i pulsanti
     document.getElementById('listViewBtn').classList.remove('active');
     document.getElementById('graphicViewBtn').classList.remove('active');
@@ -406,7 +416,7 @@ function showCalendarView() {
     document.getElementById('listView').classList.remove('active');
     document.getElementById('graphicView').classList.remove('active');
 
-    sessionStorage.setItem('lastActivePanel', 'calendario');
+    
 }
 
 function renderCalendar() {
@@ -560,10 +570,10 @@ function printCard(component, booking) {
             <p><i class="fa fa-sticky-note-o" aria-hidden="true"></i> ${booking.Note && booking.hasOwnProperty("Note") ? booking.Note : ' - '}</p>
             <div class="logo"><img src="./img/${booking.channel}.png" alt="Logo" width="40"></div>
             <div class="pay">
-                <span class="lordo">${booking['Guadagno Lordo'] && booking.hasOwnProperty('Guadagno Lordo') ? formatEuro(booking['Guadagno Lordo']) + ' € /' : ''}</span>
-                <span class="netto">${booking['Guadagno Netto'] && booking.hasOwnProperty('Guadagno Netto') ? formatEuro(booking['Guadagno Netto']) + ' €' : ''}</span>
-                <span class="noLordo" style="display:none;"> -- /</span>
-                <span class="noNetto" style="display:none;"> -- €</span>
+                <span class="lordo" style="display:none;">${booking['Guadagno Lordo'] && booking.hasOwnProperty('Guadagno Lordo') ? formatEuro(booking['Guadagno Lordo']) + ' € /' : ''}</span>
+                <span class="netto" style="display:none;">${booking['Guadagno Netto'] && booking.hasOwnProperty('Guadagno Netto') ? formatEuro(booking['Guadagno Netto']) + ' €' : ''}</span>
+                <span class="noLordo" style="display:inline;"> -- /</span>
+                <span class="noNetto" style="display:inline;"> -- €</span>
             </div>
         `;
         
@@ -572,6 +582,7 @@ function printCard(component, booking) {
         payElement.addEventListener('click', function() {
             showHidePayDetails();
         });
+ 
 }
 
 function showHidePayDetails() {
@@ -600,8 +611,9 @@ function showHidePayDetails() {
 function previousMonth() {
     currentMonth--;
     if (currentMonth < 0) {
-        currentMonth = 11;
-        currentYear--;
+        //currentMonth = 11;
+        //currentYear--;
+        currentMonth = 0;
     }
     renderCalendar();
 }
@@ -609,8 +621,9 @@ function previousMonth() {
 function nextMonth() {
     currentMonth++;
     if (currentMonth > 11) {
-        currentMonth = 0;
-        currentYear++;
+        //currentMonth = 0;
+        //currentYear++;
+        currentMonth = 11;
     }
     renderCalendar();
 }
