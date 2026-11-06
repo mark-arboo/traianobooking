@@ -567,6 +567,7 @@ function printCard(component, booking) {
             <p><i class="fa fa-moon-o" aria-hidden="true"></i> ${booking.Notti} Notti</p>
             <p><i class="fa fa-user-o" aria-hidden="true"></i> ${booking['Numero Ospiti']} ${booking['Numero Ospiti'].toString().length === 1 ? 'Ospiti' : ''}</p>
             <p><i class="fa fa-percent" aria-hidden="true"></i> ${booking['Tassa di soggiorno'] && booking.hasOwnProperty('Tassa di soggiorno') ? formatEuro(booking['Tassa di soggiorno']) + ' € Tassa di soggiorno' : 'No Tax'}</p>
+            <p><i class="fa fa-phone" aria-hidden="true"></i> ${booking.Cellulare && booking.hasOwnProperty("Cellulare") ? booking.Cellulare.replace(/\\/g, '+') : ' - '}</p>
             <p><i class="fa fa-sticky-note-o" aria-hidden="true"></i> ${booking.Note && booking.hasOwnProperty("Note") ? booking.Note : ' - '}</p>
             <div class="logo"><img src="./img/${booking.channel}.png" alt="Logo" width="40"></div>
             <div class="pay">
