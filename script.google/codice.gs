@@ -1,54 +1,13 @@
-const FOLDER_ID = "1zdt-dktaURazqewSB_7iyo275afgT3nk"; 
 const SPREADSHEET_ID_2026 = '1eZ2t1dVZqAiZTflLigA9y8sHzbXSVdISgmlCt8MeOyk';
 const SPREADSHEET_ID_2027 = '1ZXO7JxQZ6u9uge8QSMYn8sNmzZ7zW7b-KXsJ_64WZe0';
 
 function doGet(e) {
-  /*
-  const action = e && e.parameter ? e.parameter.action : null;
 
-  switch (action) {
-    case 'getPrenotazioni':
-      return getPrenotazioni(e);
-    default:
-      return ContentService.createTextOutput(JSON.stringify({
-        status: "error",
-        message: "Azione GET non supportata"
-      })).setMimeType(ContentService.MimeType.TEXT);
-  }
-  */
 }
 
 
 function doPost(e) {
-  const action = getActionFromRequest(e);
-
-  switch (action) {
-    case 'savePrenotazione':
-      return savePrenotazione(e);
-    default:
-      return ContentService.createTextOutput(JSON.stringify({
-        status: "error",
-        message: "Azione POST non supportata"
-      })).setMimeType(ContentService.MimeType.TEXT);
-  }
-}
-
-function getActionFromRequest(e) {
-  const queryAction = e && e.parameter ? e.parameter.action : null;
-  if (queryAction) {
-    return queryAction;
-  }
-
-  try {
-    if (e && e.postData && e.postData.contents) {
-      const body = JSON.parse(e.postData.contents);
-      return body && body.action ? body.action : null;
-    }
-  } catch (error) {
-    // Ignora body non JSON
-  }
-
-  return null;
+  return savePrenotazione(e);
 }
 
 function savePrenotazione(e) {
@@ -68,8 +27,8 @@ function savePrenotazione(e) {
     if (!channel) throw new Error('Canale non valido.');
 
     const nominativo = requiredBookingText(request.nominativo, 'Nominativo');
-    const cellulare = requiredBookingText(request.cellulare, 'Cellulare');
-    if (!/^[0-9 +]+$/.test(cellulare)) throw new Error('Cellulare: sono ammessi solo numeri, spazi e +.');
+    const cellulare = String(request.cellulare ?? '').trim();
+    if (cellulare && !/^[0-9 +]+$/.test(cellulare)) throw new Error('Cellulare: sono ammessi solo numeri, spazi e +.');
     const numeroOspiti = requiredBookingText(request.numeroOspiti, 'Numero Ospiti');
     const taxGuestsText = requiredBookingText(request.ospitiSoggettiATassa, 'Ospiti soggetti a tassa di soggiorno');
     const taxGuests = Number(taxGuestsText);
@@ -83,11 +42,15 @@ function savePrenotazione(e) {
       'Check-in': checkin.serial,
       'Check-out': checkout.serial,
       'Numero Ospiti': bookingSheetText(numeroOspiti),
-      'Ospiti soggetti a tassa di soggiorno': taxGuests,
-      'Guadagno Lordo': parseBookingAmount(request.guadagnoLordo),
-      Note: bookingSheetText(String(request.note || '').trim())
+      Note: bookingSheetText(String(request.note || '').trim()),
+      'Stato prenotazione': 'prenotata'
     };
     if (channel === 'Airbnb') valuesByHeader['Costi di pulizia'] = parseBookingAmount(request.costiPulizia);
+    if (channel === 'Airbnb' || channel === 'Booking.com' ) {
+      valuesByHeader['Guadagno Lordo'] = parseBookingAmount(request.guadagnoLordo);
+      valuesByHeader['Ospiti soggetti a tassa di soggiorno'] = taxGuests;
+    }
+    if (channel === 'Black') valuesByHeader['Guadagno Netto'] = parseBookingAmount(request.guadagnoLordo);
 
     lock = LockService.getScriptLock();
     if (!lock.tryLock(30000)) throw new Error('Salvataggio occupato. Riprova tra poco.');
@@ -170,24 +133,3 @@ function bookingSheetText(value) {
 }
 
 
-
-/**
- * Funzione temporanea di bootstrap per forzare l'autorizzazione OAuth.
- * Eseguila una volta dall'editor di Apps Script, poi puoi cancellarla.
- */
-function forzaAutorizzazioneOAuth() {
-  // Tocca Google Sheets: accede a un file temporaneo o fittizio in memoria
-  try {
-    SpreadsheetApp.getActiveSpreadsheet();
-    // Se non è legato a uno Sheet specifico, creiamo un log minimo di un file vuoto
-    var tempSheet = SpreadsheetApp.create("Test_OAuth_Temporaneo");
-    DriveApp.getFileById(tempSheet.getId()); // Tocca Google Drive usando l'ID dello sheet
-    
-    // Pulizia immediata: sposta il file di test nel cestino per non sporcare il Drive
-    DriveApp.getFileById(tempSheet.getId()).setTrashed(true);
-    
-    Logger.log("Bootstrap completato con successo! Permessi Sheets e Drive concessi.");
-  } catch (e) {
-    Logger.log("Nota: " + e.message);
-  }
-}

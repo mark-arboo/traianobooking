@@ -60,18 +60,30 @@ function onFirstLoad() {
         showListView(); // Mostra la vista lista all'avvio dell'app
         
     } else {
-        loadFromRemote(googleSheetURL_2027);
+        let year = new Date().getFullYear();
+        URL = spreadsheetURL[year];
+        selectedBookingYear = year;
+        loadFromRemote(URL, year);
     }
 }
 
 function changeBookingYear(year) {
 
     const sheetURL = spreadsheetURL[year];
-    return loadFromRemote(sheetURL);
+    return loadFromRemote(sheetURL, year);
 }
 
-function loadFromRemote(URL = selectedBookingYear === 2026 ? googleSheetURL_2026 : googleSheetURL_2027) {
-    const bookingYear = URL === googleSheetURL_2026 ? 2026 : 2027;
+function loadFromRemote(URL, year) {
+    if (URL == null || String(URL).trim() === '' || year == null || String(year).trim() === '') {
+        year = new Date().getFullYear();
+        URL = spreadsheetURL[year];
+    }
+    if (!URL) {
+        console.error('Nessun file Excel configurato per l\'anno ' + year);
+        return Promise.resolve();
+    }
+
+    const bookingYear = Number(year);
     const yearSelect = document.getElementById('bookingYearSelect');
     yearSelect.disabled = true;
     const listView = document.getElementById('listView');
@@ -181,7 +193,7 @@ function showGraphicView() {
     document.getElementById('graphicViewBtn').classList.add('active');
 
     // Aggiorna il titolo
-    updateViewHeader('Report', 'grafico');
+    updateViewHeader(`Report ${selectedBookingYear}`, 'grafico');
 
     renderGraphicView();
   
@@ -370,7 +382,7 @@ function showInsertBooking() {
             </div>
             <div class="booking-field booking-field-wide">
                 <label for="bookingPhone">Cellulare</label>
-                <input id="bookingPhone" name="Cellulare" type="tel" autocomplete="tel" title="Sono ammessi solo numeri, spazi e il carattere +" required>
+                <input id="bookingPhone" name="Cellulare" type="tel" autocomplete="tel" title="Sono ammessi solo numeri, spazi e il carattere +">
             </div>
             <div class="booking-field">
                 <label for="bookingCheckin">Check-in (gg/mm/aaaa)</label>
@@ -492,7 +504,7 @@ function validateBookingForm(form) {
         data.get('Nominativo').trim() ? '' : 'Inserisci il nominativo.'
     );
     fields.namedItem('Cellulare').setCustomValidity(
-        data.get('Cellulare').trim() && /^[0-9 +]+$/.test(data.get('Cellulare'))
+        !data.get('Cellulare').trim() || /^[0-9 +]+$/.test(data.get('Cellulare'))
             ? '' : 'Inserisci il cellulare usando solo numeri, spazi e il carattere +.'
     );
 
@@ -671,7 +683,7 @@ function showCalendarView() {
     document.getElementById('calendarViewBtn').classList.add('active');
 
     // Aggiorna il titolo
-    updateViewHeader('Disponibilità', 'calendario');
+    updateViewHeader(`Disponibilità ${selectedBookingYear}`, 'calendario');
     
     renderCalendar();
 
@@ -825,13 +837,18 @@ function showDayDetails(dateString, bookings) {
 }
 
 function printCard(component, booking) {
+    const guests = booking['Numero Ospiti'] == null ? '' : String(booking['Numero Ospiti']).trim();
+        const phone = typeof booking.Cellulare === 'string'
+            ? booking.Cellulare.trim()
+            : typeof booking.Cellulare === 'number' && Number.isFinite(booking.Cellulare)
+                ? String(booking.Cellulare) : '';
         component.innerHTML = `
             <p><strong>${booking.Nominativo}</strong></p>
             <p><i class="fa fa-calendar-o" aria-hidden="true"></i> ${booking['Check-in']} - ${booking['Check-out']}</p>
             <p><i class="fa fa-moon-o" aria-hidden="true"></i> ${booking.Notti} Notti</p>
-            <p><i class="fa fa-user-o" aria-hidden="true"></i> ${booking['Numero Ospiti']} ${booking['Numero Ospiti'].toString().length === 1 ? 'Ospiti' : ''}</p>
+            <p><i class="fa fa-user-o" aria-hidden="true"></i> ${guests || '-'} ${guests.length === 1 ? 'Ospiti' : ''}</p>
             <p><i class="fa fa-percent" aria-hidden="true"></i> ${booking['Tassa di soggiorno'] && booking.hasOwnProperty('Tassa di soggiorno') ? formatEuro(booking['Tassa di soggiorno']) + ' € Tassa di soggiorno' : 'No Tax'}</p>
-            <p><i class="fa fa-phone" aria-hidden="true"></i> ${booking.Cellulare && booking.hasOwnProperty("Cellulare") ? booking.Cellulare.replace(/\\/g, '+') : ' - '}</p>
+            <p><i class="fa fa-phone" aria-hidden="true"></i> ${phone ? phone.replace(/\\/g, '+') : ' - '}</p>
             <p><i class="fa fa-sticky-note-o" aria-hidden="true"></i> ${booking.Note && booking.hasOwnProperty("Note") ? booking.Note : ' - '}</p>
             <div class="logo"><img src="./img/${booking.channel}.png" alt="Logo" width="40"></div>
             <div class="pay">
