@@ -1,5 +1,5 @@
 ﻿// URL applicazione Script google
-const bookingScriptURL = 'https://script.google.com/macros/s/AKfycbykTMwDKtApZEPmbZU3xklxh2bdLKB-72DwcbJhJRgfFBNQCIYPTw5g4G1Pjlx_ynDUAQ/exec';
+const bookingScriptURL = 'https://script.google.com/macros/s/AKfycbwLmckTZoLxkMf6cys52o2CbvI6FRHpXdC0TZQuxQ_xYjhdr4qurelNIFraEf3XdNKKQg/exec';
 // URL del foglio Google Sheets esportato in formato XLSX
 let googleSheetURL_2026 = "https://docs.google.com/spreadsheets/d/1eZ2t1dVZqAiZTflLigA9y8sHzbXSVdISgmlCt8MeOyk/export?format=xlsx";
 let googleSheetURL_2027 = "https://docs.google.com/spreadsheets/d/1ZXO7JxQZ6u9uge8QSMYn8sNmzZ7zW7b-KXsJ_64WZe0/export?format=xlsx";
