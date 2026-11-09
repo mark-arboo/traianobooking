@@ -24,7 +24,19 @@
 
   </head>
   <body onload="initializeApp()">
-    <h1>Prenotazioni</h1>
+    <header class="page-header">
+      <button id="backToListBtn" type="button" class="header-button" onclick="showListView()" aria-label="Torna alle prenotazioni" title="Torna alle prenotazioni" hidden>
+        <i class="fa fa-arrow-left" aria-hidden="true"></i>
+      </button>
+      <h1>Prenotazioni</h1>
+      <select id="bookingYearSelect" class="booking-year-select" aria-label="Anno prenotazioni" onchange="changeBookingYear(this.value)">
+        <option value="2026">2026</option>
+        <option value="2027" selected>2027</option>
+      </select>
+      <button id="insertBookingBtn" type="button" class="header-button" onclick="showInsertBooking()" aria-label="Nuova prenotazione" title="Nuova prenotazione">
+        <i class="fa fa-plus" aria-hidden="true"></i>
+      </button>
+    </header>
     
     <div class="tabbar">
          <button id="listViewBtn" class="tabButton active" onclick="showListView()">
@@ -55,6 +67,8 @@
         <div id="graphicView" class="view">
             <!-- Il grafico verrà generato qui dinamicamente -->
         </div>       
+
+        <div id="insertBookingView" class="view"></div>
 
     </div>
 

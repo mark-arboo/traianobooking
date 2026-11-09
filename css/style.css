@@ -19,6 +19,157 @@ h1 {
   font-weight: bold;
 }
 
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-header h1 {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.booking-year-select {
+  flex: 0 0 88px;
+  width: 88px;
+  min-height: 44px;
+  padding: 8px;
+  border: 1px solid #bbb;
+  border-radius: 5px;
+  background-color: #fff;
+  color: #333;
+  font: inherit;
+  font-size: 16px;
+}
+
+@media (max-width: 480px) {
+  .page-header {
+    gap: 8px;
+  }
+
+  .page-header h1 {
+    font-size: 24px;
+  }
+}
+
+.header-button {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 50px;
+  background: transparent;
+  color: #007bff;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.header-button:hover {
+  background-color: #fff;
+}
+
+#insertBookingBtn {
+  margin-left: auto;
+  background-color: #007bff;
+  color: #fff;
+}
+
+#insertBookingBtn:hover {
+  background-color: #0056b3;
+}
+
+.header-button:focus-visible {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+.booking-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding-bottom: 30px;
+}
+
+.booking-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.booking-field[hidden] {
+  display: none;
+}
+
+.booking-field label {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.booking-field input,
+.booking-field select,
+.booking-field textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px;
+  border: 1px solid #bbb;
+  border-radius: 5px;
+  background-color: #fff;
+  color: #333;
+  font: inherit;
+  font-size: 16px;
+}
+
+.booking-field textarea {
+  resize: vertical;
+}
+
+.booking-field-wide {
+  grid-column: 1 / -1;
+}
+
+.booking-submit {
+  min-height: 44px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.booking-submit:hover {
+  background-color: #0056b3;
+}
+
+.booking-form :focus-visible {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+.booking-field :is(input, select, textarea):user-invalid,
+.booking-field [aria-invalid="true"] {
+  border-color: #c62828;
+  background-color: #fff4f4;
+  outline-color: #c62828;
+}
+
+@media (max-width: 640px) {
+  .booking-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 strong {
   font-weight: bold;
 }

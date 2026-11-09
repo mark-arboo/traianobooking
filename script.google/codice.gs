@@ -1,0 +1,193 @@
+const FOLDER_ID = "1zdt-dktaURazqewSB_7iyo275afgT3nk"; 
+const SPREADSHEET_ID_2026 = '1eZ2t1dVZqAiZTflLigA9y8sHzbXSVdISgmlCt8MeOyk';
+const SPREADSHEET_ID_2027 = '1ZXO7JxQZ6u9uge8QSMYn8sNmzZ7zW7b-KXsJ_64WZe0';
+
+function doGet(e) {
+  /*
+  const action = e && e.parameter ? e.parameter.action : null;
+
+  switch (action) {
+    case 'getPrenotazioni':
+      return getPrenotazioni(e);
+    default:
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "error",
+        message: "Azione GET non supportata"
+      })).setMimeType(ContentService.MimeType.TEXT);
+  }
+  */
+}
+
+
+function doPost(e) {
+  const action = getActionFromRequest(e);
+
+  switch (action) {
+    case 'savePrenotazione':
+      return savePrenotazione(e);
+    default:
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "error",
+        message: "Azione POST non supportata"
+      })).setMimeType(ContentService.MimeType.TEXT);
+  }
+}
+
+function getActionFromRequest(e) {
+  const queryAction = e && e.parameter ? e.parameter.action : null;
+  if (queryAction) {
+    return queryAction;
+  }
+
+  try {
+    if (e && e.postData && e.postData.contents) {
+      const body = JSON.parse(e.postData.contents);
+      return body && body.action ? body.action : null;
+    }
+  } catch (error) {
+    // Ignora body non JSON
+  }
+
+  return null;
+}
+
+function savePrenotazione(e) {
+  let lock;
+  try {
+    const request = JSON.parse(e.postData.contents);
+    const checkin = parseBookingDate(request.checkin);
+    const checkout = parseBookingDate(request.checkout);
+    if (checkout.serial <= checkin.serial) throw new Error('Il check-out deve essere successivo al check-in.');
+
+    const spreadsheetIds = { 2026: SPREADSHEET_ID_2026, 2027: SPREADSHEET_ID_2027 };
+    const spreadsheetId = spreadsheetIds[checkin.year];
+    if (!spreadsheetId) throw new Error('Anno del check-in non supportato.');
+
+    const channels = { 'booking.com': 'Booking.com', booking: 'Booking.com', airbnb: 'Airbnb', black: 'Black' };
+    const channel = channels[String(request.channel).toLowerCase()];
+    if (!channel) throw new Error('Canale non valido.');
+
+    const nominativo = requiredBookingText(request.nominativo, 'Nominativo');
+    const cellulare = requiredBookingText(request.cellulare, 'Cellulare');
+    if (!/^[0-9 +]+$/.test(cellulare)) throw new Error('Cellulare: sono ammessi solo numeri, spazi e +.');
+    const numeroOspiti = requiredBookingText(request.numeroOspiti, 'Numero Ospiti');
+    const taxGuestsText = requiredBookingText(request.ospitiSoggettiATassa, 'Ospiti soggetti a tassa di soggiorno');
+    const taxGuests = Number(taxGuestsText);
+    if (!/^\d+$/.test(taxGuestsText) || !Number.isSafeInteger(taxGuests)) {
+      throw new Error('Gli ospiti soggetti a tassa devono essere un intero non negativo.');
+    }
+
+    const valuesByHeader = {
+      Nominativo: bookingSheetText(nominativo),
+      Cellulare: bookingSheetText(cellulare),
+      'Check-in': checkin.serial,
+      'Check-out': checkout.serial,
+      'Numero Ospiti': bookingSheetText(numeroOspiti),
+      'Ospiti soggetti a tassa di soggiorno': taxGuests,
+      'Guadagno Lordo': parseBookingAmount(request.guadagnoLordo),
+      Note: bookingSheetText(String(request.note || '').trim())
+    };
+    if (channel === 'Airbnb') valuesByHeader['Costi di pulizia'] = parseBookingAmount(request.costiPulizia);
+
+    lock = LockService.getScriptLock();
+    if (!lock.tryLock(30000)) throw new Error('Salvataggio occupato. Riprova tra poco.');
+    const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+    const sheet = spreadsheet.getSheets().find(candidate => candidate.getName().toLowerCase() === channel.toLowerCase());
+    if (!sheet) throw new Error('Foglio non trovato: ' + channel);
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0].map(header => String(header).trim().toLowerCase());
+    const entries = Object.keys(valuesByHeader).map(header => {
+      const column = headers.indexOf(header.toLowerCase());
+      if (column === -1) throw new Error('Colonna mancante nel foglio ' + channel + ': ' + header);
+      return { header: header, column: column + 1, value: valuesByHeader[header] };
+    });
+    const nameColumn = headers.indexOf('nominativo');
+    const emptyRow = data.findIndex((row, index) => index > 0 && String(row[nameColumn]).trim() === '');
+    const rowNumber = emptyRow === -1 ? data.length + 1 : emptyRow + 1;
+
+    entries.forEach(entry => {
+      const cell = sheet.getRange(rowNumber, entry.column);
+      cell.setValue(entry.value);
+      if (entry.header === 'Check-in' || entry.header === 'Check-out') cell.setNumberFormat('dd/MM/yyyy');
+      if (entry.header === 'Guadagno Lordo' || entry.header === 'Costi di pulizia') cell.setNumberFormat('#,##0.00');
+    });
+    const nightsColumn = headers.indexOf('notti');
+    if (nightsColumn !== -1) {
+      const nightsCell = sheet.getRange(rowNumber, nightsColumn + 1);
+      if (!nightsCell.getFormula()) nightsCell.setValue(checkout.serial - checkin.serial);
+    }
+    SpreadsheetApp.flush();
+
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'success',
+      year: checkin.year,
+      channel: channel,
+      row: rowNumber
+    })).setMimeType(ContentService.MimeType.TEXT);
+
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "error",
+      message: error.toString()
+    })).setMimeType(ContentService.MimeType.TEXT);
+  } finally {
+    if (lock && lock.hasLock()) lock.releaseLock();
+  }
+}
+
+function requiredBookingText(value, label) {
+  if (value === null || value === undefined || !String(value).trim()) {
+    throw new Error('Campo obbligatorio: ' + label);
+  }
+  return String(value).trim();
+}
+
+function parseBookingDate(value) {
+  const text = requiredBookingText(value, 'Data');
+  const parts = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(text);
+  if (!parts) throw new Error('Data non valida: usa gg/mm/aaaa.');
+  const day = Number(parts[1]);
+  const month = Number(parts[2]);
+  const year = Number(parts[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+    throw new Error('Data non valida.');
+  }
+  return { year: year, serial: date.getTime() / 86400000 + 25569 };
+}
+
+function parseBookingAmount(value) {
+  const text = requiredBookingText(value, 'Importo');
+  const amount = Number(text.replace(',', '.'));
+  if (!/^\d+([.,]\d{1,2})?$/.test(text) || !Number.isFinite(amount)) {
+    throw new Error('Importo non valido: usa un valore non negativo con massimo due decimali.');
+  }
+  return amount;
+}
+
+function bookingSheetText(value) {
+  return /^[=+\-@]/.test(value) ? "'" + value : value;
+}
+
+
+
+/**
+ * Funzione temporanea di bootstrap per forzare l'autorizzazione OAuth.
+ * Eseguila una volta dall'editor di Apps Script, poi puoi cancellarla.
+ */
+function forzaAutorizzazioneOAuth() {
+  // Tocca Google Sheets: accede a un file temporaneo o fittizio in memoria
+  try {
+    SpreadsheetApp.getActiveSpreadsheet();
+    // Se non è legato a uno Sheet specifico, creiamo un log minimo di un file vuoto
+    var tempSheet = SpreadsheetApp.create("Test_OAuth_Temporaneo");
+    DriveApp.getFileById(tempSheet.getId()); // Tocca Google Drive usando l'ID dello sheet
+    
+    // Pulizia immediata: sposta il file di test nel cestino per non sporcare il Drive
+    DriveApp.getFileById(tempSheet.getId()).setTrashed(true);
+    
+    Logger.log("Bootstrap completato con successo! Permessi Sheets e Drive concessi.");
+  } catch (e) {
+    Logger.log("Nota: " + e.message);
+  }
+}

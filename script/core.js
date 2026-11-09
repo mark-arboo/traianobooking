@@ -1,8 +1,12 @@
-﻿// URL del foglio Google Sheets esportato in formato XLSX
-//let googleSheetURL = "https://docs.google.com/spreadsheets/d/1eZ2t1dVZqAiZTflLigA9y8sHzbXSVdISgmlCt8MeOyk/export?format=xlsx";
-let googleSheetURL = "https://docs.google.com/spreadsheets/d/1ZXO7JxQZ6u9uge8QSMYn8sNmzZ7zW7b-KXsJ_64WZe0/export?format=xlsx";
+﻿// URL applicazione Script google
+const bookingScriptURL = 'https://script.google.com/macros/s/AKfycbykTMwDKtApZEPmbZU3xklxh2bdLKB-72DwcbJhJRgfFBNQCIYPTw5g4G1Pjlx_ynDUAQ/exec';
+// URL del foglio Google Sheets esportato in formato XLSX
+let googleSheetURL_2026 = "https://docs.google.com/spreadsheets/d/1eZ2t1dVZqAiZTflLigA9y8sHzbXSVdISgmlCt8MeOyk/export?format=xlsx";
+let googleSheetURL_2027 = "https://docs.google.com/spreadsheets/d/1ZXO7JxQZ6u9uge8QSMYn8sNmzZ7zW7b-KXsJ_64WZe0/export?format=xlsx";
+const spreadsheetURL = { 2026: googleSheetURL_2026, 2027: googleSheetURL_2027 };
 
 let arrayBooking = [];
+let selectedBookingYear = 2027;
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
 let cache = false;
@@ -45,24 +49,41 @@ function isFirstLoad() {
  */
 function onFirstLoad() {
 
-    if (localStorage.getItem('arrayBooking') && cache) {
+    if (localStorage.getItem('arrayBooking') && cache &&
+        localStorage.getItem('arrayBookingYear') === String(selectedBookingYear)) {
         console.log('onFirstLoad - Caricamento dati da localStorage');
 
         arrayBooking = JSON.parse(localStorage.getItem('arrayBooking'));
         sessionStorage.setItem('arrayBooking', localStorage.getItem('arrayBooking'));
+        sessionStorage.setItem('arrayBookingYear', String(selectedBookingYear));
     
         showListView(); // Mostra la vista lista all'avvio dell'app
         
     } else {
-        loadFromRemote();
+        loadFromRemote(googleSheetURL_2027);
     }
 }
 
-function loadFromRemote() {
+function changeBookingYear(year) {
+
+    const sheetURL = spreadsheetURL[year];
+    return loadFromRemote(sheetURL);
+}
+
+function loadFromRemote(URL = selectedBookingYear === 2026 ? googleSheetURL_2026 : googleSheetURL_2027) {
+    const bookingYear = URL === googleSheetURL_2026 ? 2026 : 2027;
+    const yearSelect = document.getElementById('bookingYearSelect');
+    yearSelect.disabled = true;
+    const listView = document.getElementById('listView');
+    listView.setAttribute('aria-busy', 'true');
+    listView.innerHTML = '<img src="./img/loading.gif" alt="Caricamento..." id="loadingIndicator" width="50" height="50">';
     console.log('loadFromRemote - Caricamento dati da URL');
     // legge i primi 3 sheet di un file excel letto da una URL 
-    fetch(googleSheetURL)
-        .then(response => response.arrayBuffer())
+    return fetch(URL)
+        .then(response => {
+            if (!response.ok) throw new Error('Caricamento non riuscito (HTTP ' + response.status + ')');
+            return response.arrayBuffer();
+        })
         .then(data => {
             const workbook = XLSX.read(data, { type: 'array' });
             const bookingSheetName = workbook.SheetNames[1];
@@ -99,45 +120,39 @@ function loadFromRemote() {
             // ordina l'arrayBooking per data di arrivo (campo Check-in)
             arrayBooking.sort((a, b) => parseItalianDate(a['Check-in']) - parseItalianDate(b['Check-in']));
 
+            selectedBookingYear = bookingYear;
             sessionStorage.setItem('arrayBooking', JSON.stringify(arrayBooking));
+            sessionStorage.setItem('arrayBookingYear', String(selectedBookingYear));
 
-            if (cache) localStorage.setItem('arrayBooking', JSON.stringify(arrayBooking));
+            if (cache) {
+                localStorage.setItem('arrayBooking', JSON.stringify(arrayBooking));
+                localStorage.setItem('arrayBookingYear', String(selectedBookingYear));
+            }
 
             showListView(); // Mostra la vista lista all'avvio dell'app
         })
-        .catch(error => console.error('Errore durante il caricamento del file Excel:', error));
+        .catch(error => {
+            yearSelect.value = String(selectedBookingYear);
+            showListView();
+            console.error('Errore durante il caricamento del file Excel:', error);
+        })
+        .finally(() => {
+            listView.setAttribute('aria-busy', 'false');
+            yearSelect.disabled = false;
+        });
 }
 
 /**
  * Logica eseguita durante il refresh
  */
 function onPageRefresh() {
-    // Qui puoi aggiungere logica per il refresh
-    // Ad esempio: ripristinare stato, saltare intro, etc.
-    
-    // Controlla se c'era un pannello salvato
-    const lastPanel = sessionStorage.getItem('lastActivePanel');
-
-    if (sessionStorage.getItem('arrayBooking')) {
+    const storedYear = sessionStorage.getItem('arrayBookingYear');
+    if (sessionStorage.getItem('arrayBooking') && (storedYear === '2026' || storedYear === '2027')) {
         arrayBooking = JSON.parse(sessionStorage.getItem('arrayBooking'));
-    }
-    
-    if (lastPanel) {
-        switch(lastPanel) {
-            case 'calendario':
-                showCalendarView();
-                break;
-            case 'lista':
-                showListView();
-                break;
-            case 'grafico':
-                showGraphicView();
-                break;    
-            default:
-                showListView();
-        }
-    } else {
+        selectedBookingYear = Number(storedYear);
         showListView();
+    } else {
+        onFirstLoad();
     }
 }
 
@@ -166,7 +181,7 @@ function showGraphicView() {
     document.getElementById('graphicViewBtn').classList.add('active');
 
     // Aggiorna il titolo
-    document.querySelector('h1').textContent = 'Report';
+    updateViewHeader('Report', 'grafico');
 
     renderGraphicView();
   
@@ -320,7 +335,258 @@ function calculateYearlyRevenue(year) {
 }
 
 
+function updateViewHeader(title, panel) {
+    document.querySelector('h1').textContent = title;
+    const yearSelect = document.getElementById('bookingYearSelect');
+    yearSelect.hidden = panel !== 'lista';
+    yearSelect.value = String(selectedBookingYear);
+    document.getElementById('insertBookingBtn').hidden = panel !== 'lista';
+    document.getElementById('backToListBtn').hidden = panel !== 'inserisci';
+    document.getElementById('insertBookingView').classList.toggle('active', panel === 'inserisci');
+}
 
+function showInsertBooking() {
+    sessionStorage.setItem('lastActivePanel', 'inserisci');
+    document.querySelectorAll('.view, .tabButton').forEach(element => {
+        element.classList.remove('active');
+    });
+    document.getElementById('listViewBtn').classList.add('active');
+    updateViewHeader('Nuova Prenotazione', 'inserisci');
+
+    const container = document.getElementById('insertBookingView');
+    container.innerHTML = `
+        <form id="bookingForm" class="booking-form">
+            <div class="booking-field">
+                <label for="bookingChannel">Canale</label>
+                <select id="bookingChannel" name="channel" required>
+                    <option value="Booking.com">Booking.com</option>
+                    <option value="Airbnb">Airbnb</option>
+                    <option value="Black">Black</option>
+                </select>
+            </div>
+            <div class="booking-field">
+                <label for="bookingName">Nominativo</label>
+                <input id="bookingName" name="Nominativo" type="text" autocomplete="name" required>
+            </div>
+            <div class="booking-field booking-field-wide">
+                <label for="bookingPhone">Cellulare</label>
+                <input id="bookingPhone" name="Cellulare" type="tel" autocomplete="tel" title="Sono ammessi solo numeri, spazi e il carattere +" required>
+            </div>
+            <div class="booking-field">
+                <label for="bookingCheckin">Check-in (gg/mm/aaaa)</label>
+                <input id="bookingCheckin" name="Check-in" type="text" inputmode="numeric" placeholder="gg/mm/aaaa" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" maxlength="10" required>
+            </div>
+            <div class="booking-field">
+                <label for="bookingCheckout">Check-out (gg/mm/aaaa)</label>
+                <input id="bookingCheckout" name="Check-out" type="text" inputmode="numeric" placeholder="gg/mm/aaaa" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" maxlength="10" required>
+            </div>
+            <div class="booking-field">
+                <label for="bookingGuests">Numero ospiti</label>
+                <input id="bookingGuests" name="Numero Ospiti" type="text" required>
+            </div>
+            <div class="booking-field">
+                <label for="bookingTaxGuests">Ospiti soggetti a tassa di soggiorno</label>
+                <input id="bookingTaxGuests" name="Ospiti soggetti a tassa di soggiorno" type="number" min="0" step="1" required>
+            </div>
+            <div class="booking-field booking-field-wide">
+                <label for="bookingGross">Lordo (euro)</label>
+                <input id="bookingGross" name="Guadagno Lordo" type="number" inputmode="decimal" min="0" step="0.01" required>
+            </div>
+            <div id="bookingCleaningField" class="booking-field booking-field-wide" hidden>
+                <label for="bookingCleaning">Costi di pulizia (euro)</label>
+                <input id="bookingCleaning" name="Costi di pulizia" type="number" inputmode="decimal" min="0" step="0.01" disabled>
+            </div>
+            <div class="booking-field booking-field-wide">
+                <label for="bookingNotes">Note</label>
+                <textarea id="bookingNotes" name="Note" rows="4"></textarea>
+            </div>
+            <button type="submit" class="booking-submit booking-field-wide">
+                Inserisci prenotazione
+            </button>
+            <p id="bookingSaveStatus" class="booking-field-wide" role="status" hidden></p>
+        </form>
+    `;
+
+    const form = document.getElementById('bookingForm');
+    updateBookingCleaningField(form);
+    form.elements.namedItem('channel').addEventListener('change', () => updateBookingCleaningField(form));
+    form.addEventListener('submit', submitBooking);
+    form.addEventListener('focusout', event => {
+        if (!event.target.matches('input, select, textarea')) return;
+        event.target.dataset.touched = 'true';
+        validateBookingForm(form);
+        if (!event.target.validity.valid) event.target.reportValidity();
+    });
+    form.addEventListener('input', event => {
+        if (!event.target.matches('input, select, textarea')) return;
+        event.target.setCustomValidity('');
+        event.target.removeAttribute('aria-invalid');
+    });
+    form.addEventListener('invalid', event => {
+        event.target.dataset.touched = 'true';
+        updateBookingFieldError(event.target);
+    }, true);
+}
+
+function updateBookingCleaningField(form) {
+    const isAirbnb = form.elements.namedItem('channel').value === 'Airbnb';
+    const field = form.elements.namedItem('Costi di pulizia');
+    document.getElementById('bookingCleaningField').hidden = !isAirbnb;
+    field.disabled = !isAirbnb;
+    field.required = isAirbnb;
+    if (!isAirbnb) {
+        field.setCustomValidity('');
+        field.removeAttribute('aria-invalid');
+        delete field.dataset.touched;
+    }
+}
+
+function updateBookingFieldError(field) {
+    const invalid = !field.validity.valid;
+    field.setAttribute('aria-invalid', String(invalid));
+    if (!invalid) return;
+
+    const formatHints = {
+        channel: 'Scegli un canale tra Booking.com, Airbnb e Black.',
+        Nominativo: 'Inserisci il nominativo.',
+        Cellulare: 'Usa solo numeri, spazi e il carattere +, ad esempio +39 333 1234567.',
+        'Check-in': 'Inserisci una data valida in formato gg/mm/aaaa, ad esempio 09/11/2026.',
+        'Check-out': 'Inserisci una data valida in formato gg/mm/aaaa, successiva al check-in.',
+        'Numero Ospiti': 'Inserisci il numero ospiti, anche come testo: ad esempio 2 adulti e 1 bambino.',
+        'Ospiti soggetti a tassa di soggiorno': 'Inserisci un numero intero maggiore o uguale a 0.',
+        'Guadagno Lordo': 'Inserisci un importo maggiore o uguale a 0 con massimo due decimali, ad esempio 250,75.',
+        'Costi di pulizia': 'Inserisci un importo maggiore o uguale a 0 con massimo due decimali, ad esempio 250,75.'
+    };
+
+    const message = field.validity.valueMissing
+        ? 'Campo obbligatorio: inserisci un valore.'
+        : field.validity.customError
+            ? field.validationMessage : formatHints[field.name] || field.validationMessage;
+    field.setCustomValidity(message);
+}
+
+function validateBookingForm(form) {
+    const fields = form.elements;
+    const data = new FormData(form);
+
+    form.querySelectorAll('input, select, textarea').forEach(field => {
+        field.setCustomValidity('');
+    });
+
+    ['Check-in', 'Check-out'].forEach(name => {
+        const value = data.get(name);
+        const date = parseItalianDate(value);
+        const formattedDate = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+        fields.namedItem(name).setCustomValidity(
+            /^[0-9]{2}\/[0-9]{2}\/[0-9]{4}$/.test(value) && formattedDate === value
+                ? '' : 'Inserisci una data valida in formato gg/mm/aaaa.'
+        );
+    });
+
+    if (fields.namedItem('Check-in').validity.valid && fields.namedItem('Check-out').validity.valid &&
+        parseItalianDate(data.get('Check-out')) <= parseItalianDate(data.get('Check-in'))) {
+        fields.namedItem('Check-out').setCustomValidity('Il check-out deve essere successivo al check-in.');
+    }
+
+    fields.namedItem('Nominativo').setCustomValidity(
+        data.get('Nominativo').trim() ? '' : 'Inserisci il nominativo.'
+    );
+    fields.namedItem('Cellulare').setCustomValidity(
+        data.get('Cellulare').trim() && /^[0-9 +]+$/.test(data.get('Cellulare'))
+            ? '' : 'Inserisci il cellulare usando solo numeri, spazi e il carattere +.'
+    );
+
+    form.querySelectorAll('input, select, textarea').forEach(field => {
+        if (field.disabled) return;
+        if (field.required && !field.value.trim()) {
+            field.setCustomValidity('Campo obbligatorio: inserisci un valore.');
+        }
+        if (field.dataset.touched === 'true') {
+            updateBookingFieldError(field);
+        }
+    });
+}
+
+async function submitBooking(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    if (form.dataset.saving === 'true') return;
+    const bookingData = collectBookingData(event);
+    if (!bookingData) return;
+
+    const status = form.querySelector('#bookingSaveStatus');
+    status.hidden = false;
+    if (!bookingScriptURL) {
+        status.textContent = 'Configura bookingScriptURL con l\'URL /exec della Web App Google Apps Script.';
+        return;
+    }
+
+    const controls = Array.from(form.querySelectorAll('input, select, textarea, button'));
+    const disabledStates = controls.map(control => control.disabled);
+    const button = form.querySelector('button[type="submit"]');
+    form.dataset.saving = 'true';
+    controls.forEach(control => { control.disabled = true; });
+    button.textContent = 'Salvataggio...';
+    status.textContent = 'Salvataggio in corso...';
+
+    try {
+        const response = await fetch(bookingScriptURL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'savePrenotazione', ...bookingData })
+        });
+        if (!response.ok) throw new Error('Risposta HTTP ' + response.status);
+        const result = await response.json();
+        if (result.status !== 'success') {
+            status.textContent = result.message || 'Salvataggio non riuscito.';
+            return;
+        }
+
+        status.textContent = 'Prenotazione salvata.';
+        form.reset();
+        await changeBookingYear(String(result.year));
+    } catch (error) {
+        status.textContent = 'Salvataggio non confermato. Verifica il foglio prima di riprovare. ' + error.message;
+    } finally {
+        controls.forEach((control, index) => { control.disabled = disabledStates[index]; });
+        button.textContent = 'Inserisci prenotazione';
+        form.dataset.saving = 'false';
+        updateBookingCleaningField(form);
+    }
+}
+
+function collectBookingData(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    validateBookingForm(form);
+    if (!form.reportValidity()) return null;
+
+    const data = new FormData(form);
+    const guests = data.get('Numero Ospiti').trim();
+    const taxGuests = Number(data.get('Ospiti soggetti a tassa di soggiorno'));
+    const euroFormatter = new Intl.NumberFormat('it-IT', {
+        useGrouping: false,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+    const bookingData = {
+        channel: data.get('channel'),
+        nominativo: data.get('Nominativo').trim(),
+        cellulare: data.get('Cellulare').trim(),
+        checkin: data.get('Check-in'),
+        checkout: data.get('Check-out'),
+        numeroOspiti: guests,
+        ospitiSoggettiATassa: taxGuests,
+        note: data.get('Note').trim(),
+        guadagnoLordo: euroFormatter.format(Number(data.get('Guadagno Lordo').replace(',', '.')))
+    };
+
+    if (bookingData.channel === 'Airbnb') {
+        bookingData.costiPulizia = euroFormatter.format(Number(data.get('Costi di pulizia').replace(',', '.')));
+    }
+
+    return bookingData;
+}
 
 
 function showListView() {
@@ -334,7 +600,7 @@ function showListView() {
     document.getElementById('listViewBtn').classList.add('active');
 
     // Aggiorna il titolo
-    document.querySelector('h1').textContent = 'Prenotazioni';
+    updateViewHeader('Prenotazioni', 'lista');
  
     // svuota la visualizzazione precedente
     const listView = document.getElementById('listView');
@@ -405,7 +671,7 @@ function showCalendarView() {
     document.getElementById('calendarViewBtn').classList.add('active');
 
     // Aggiorna il titolo
-    document.querySelector('h1').textContent = 'Disponibilità';
+    updateViewHeader('Disponibilità', 'calendario');
     
     renderCalendar();
 
