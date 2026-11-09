@@ -112,6 +112,10 @@ h1 {
   line-height: 1.4;
 }
 
+.booking-field:has(> :required:not(:disabled)) > label::after {
+  content: ' *';
+}
+
 .booking-field input,
 .booking-field select,
 .booking-field textarea {

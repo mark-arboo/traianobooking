@@ -30,10 +30,13 @@ function savePrenotazione(e) {
     const cellulare = String(request.cellulare ?? '').trim();
     if (cellulare && !/^[0-9 +]+$/.test(cellulare)) throw new Error('Cellulare: sono ammessi solo numeri, spazi e +.');
     const numeroOspiti = requiredBookingText(request.numeroOspiti, 'Numero Ospiti');
-    const taxGuestsText = requiredBookingText(request.ospitiSoggettiATassa, 'Ospiti soggetti a tassa di soggiorno');
-    const taxGuests = Number(taxGuestsText);
-    if (!/^\d+$/.test(taxGuestsText) || !Number.isSafeInteger(taxGuests)) {
-      throw new Error('Gli ospiti soggetti a tassa devono essere un intero non negativo.');
+    let taxGuests = 0;
+    if (channel !== 'Black') {
+      const taxGuestsText = requiredBookingText(request.ospitiSoggettiATassa, 'Ospiti soggetti a tassa di soggiorno');
+      taxGuests = Number(taxGuestsText);
+      if (!/^\d+$/.test(taxGuestsText) || !Number.isSafeInteger(taxGuests)) {
+        throw new Error('Gli ospiti soggetti a tassa devono essere un intero non negativo.');
+      }
     }
 
     const valuesByHeader = {

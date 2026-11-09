@@ -396,7 +396,7 @@ function showInsertBooking() {
                 <label for="bookingGuests">Numero ospiti</label>
                 <input id="bookingGuests" name="Numero Ospiti" type="text" required>
             </div>
-            <div class="booking-field">
+            <div id="bookingTaxGuestsField" class="booking-field">
                 <label for="bookingTaxGuests">Ospiti soggetti a tassa di soggiorno</label>
                 <input id="bookingTaxGuests" name="Ospiti soggetti a tassa di soggiorno" type="number" min="0" step="1" required>
             </div>
@@ -450,6 +450,17 @@ function updateBookingCleaningField(form) {
         field.setCustomValidity('');
         field.removeAttribute('aria-invalid');
         delete field.dataset.touched;
+    }
+
+    const showTaxGuests = form.elements.namedItem('channel').value !== 'Black';
+    const taxField = form.elements.namedItem('Ospiti soggetti a tassa di soggiorno');
+    document.getElementById('bookingTaxGuestsField').hidden = !showTaxGuests;
+    taxField.disabled = !showTaxGuests;
+    taxField.required = showTaxGuests;
+    if (!showTaxGuests) {
+        taxField.setCustomValidity('');
+        taxField.removeAttribute('aria-invalid');
+        delete taxField.dataset.touched;
     }
 }
 
@@ -575,7 +586,6 @@ function collectBookingData(event) {
 
     const data = new FormData(form);
     const guests = data.get('Numero Ospiti').trim();
-    const taxGuests = Number(data.get('Ospiti soggetti a tassa di soggiorno'));
     const euroFormatter = new Intl.NumberFormat('it-IT', {
         useGrouping: false,
         minimumFractionDigits: 2,
@@ -588,11 +598,13 @@ function collectBookingData(event) {
         checkin: data.get('Check-in'),
         checkout: data.get('Check-out'),
         numeroOspiti: guests,
-        ospitiSoggettiATassa: taxGuests,
         note: data.get('Note').trim(),
         guadagnoLordo: euroFormatter.format(Number(data.get('Guadagno Lordo').replace(',', '.')))
     };
 
+    if (bookingData.channel !== 'Black') {
+        bookingData.ospitiSoggettiATassa = Number(data.get('Ospiti soggetti a tassa di soggiorno'));
+    }
     if (bookingData.channel === 'Airbnb') {
         bookingData.costiPulizia = euroFormatter.format(Number(data.get('Costi di pulizia').replace(',', '.')));
     }
