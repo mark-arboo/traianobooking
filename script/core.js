@@ -280,9 +280,8 @@ function renderGraphicView() {
 function previousMonthGraphic() {
     currentMonth--;
     if (currentMonth < 0) {
-        //currentMonth = 11;
-        //currentYear--;
-        currentMonth = 0;
+        currentMonth = 11;
+        currentYear--;
     }
     renderGraphicView();
 }
@@ -290,9 +289,8 @@ function previousMonthGraphic() {
 function nextMonthGraphic() {
     currentMonth++;
     if (currentMonth > 11) {
-        //currentMonth = 0;
-        //currentYear++;
-        currentMonth = 11;
+        currentMonth = 0;
+        currentYear++;
     }
     renderGraphicView();
 }
@@ -612,9 +610,8 @@ function showHidePayDetails() {
 function previousMonth() {
     currentMonth--;
     if (currentMonth < 0) {
-        //currentMonth = 11;
-        //currentYear--;
-        currentMonth = 0;
+        currentMonth = 11;
+        currentYear--;
     }
     renderCalendar();
 }
@@ -622,9 +619,8 @@ function previousMonth() {
 function nextMonth() {
     currentMonth++;
     if (currentMonth > 11) {
-        //currentMonth = 0;
-        //currentYear++;
-        currentMonth = 11;
+        currentMonth = 0;
+        currentYear++;
     }
     renderCalendar();
 }
