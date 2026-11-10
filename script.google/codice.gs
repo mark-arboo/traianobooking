@@ -129,7 +129,8 @@ function savePrenotazione(e) {
       const cell = sheet.getRange(rowNumber, entry.column);
       cell.setValue(entry.value);
       if (entry.header === 'Check-in' || entry.header === 'Check-out') cell.setNumberFormat('dd/MM/yyyy');
-      if (entry.header === 'Guadagno Lordo' || entry.header === 'Costi di pulizia') cell.setNumberFormat('#,##0.00');
+      if (entry.header === 'Guadagno Lordo' || entry.header === 'Guadagno Netto') cell.setNumberFormat('#,##0.00 "\u20ac"');
+      if (entry.header === 'Costi di pulizia') cell.setNumberFormat('#,##0.00 "\u20ac"');
     });
     const nightsColumn = headers.indexOf('notti');
     if (nightsColumn !== -1) {

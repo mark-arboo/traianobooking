@@ -1,5 +1,5 @@
 ﻿// URL applicazione Script google
-const bookingScriptURL = 'https://script.google.com/macros/s/AKfycbxNuc34pH313eGKWHpcOWe9j_yXrV08sUvlMzV2HbPXyA9IDBKHuz34Rtym_uTE4z6bCg/exec';
+const bookingScriptURL = 'https://script.google.com/macros/s/AKfycbwbXSXgoH00PXlEIfMVuzIt9kO6NCZ9bOmlhvjdELNs5v3bwyGtZR9rMmoDOLtX5GqM/exec';
 
 let arrayBooking = [];
 let selectedBookingYear = new Date().getFullYear();
@@ -127,71 +127,6 @@ function loadFromRemote(year) {
             yearSelect.disabled = false;
         });
 
-
-    /*
-    // legge i primi 3 sheet di un file excel letto da una URL 
-    return fetch(URL)
-        .then(response => {
-            if (!response.ok) throw new Error('Caricamento non riuscito (HTTP ' + response.status + ')');
-            return response.arrayBuffer();
-        })
-        .then(data => {
-            const workbook = XLSX.read(data, { type: 'array' });
-            const bookingSheetName = workbook.SheetNames[1];
-            const airbnbSheetName = workbook.SheetNames[2];
-            const blackSheetName = workbook.SheetNames[3];
-            const bookingWorksheet = workbook.Sheets[bookingSheetName];
-            const airbnbWorksheet = workbook.Sheets[airbnbSheetName];
-            const blackWorksheet = workbook.Sheets[blackSheetName];
-            const bookingData = XLSX.utils.sheet_to_json(bookingWorksheet).map(booking => ({ ...booking, channel: 'booking' }));
-            const airbnbData = XLSX.utils.sheet_to_json(airbnbWorksheet).map(booking => ({ ...booking, channel: 'airbnb' }));
-            const blackData = XLSX.utils.sheet_to_json(blackWorksheet).map(booking => ({ ...booking, channel: 'black' }));
-
-            if (arrayBooking.length > 0) {
-                // Svuoto l'arrayBooking prima di concatenare i nuovi dati
-                arrayBooking = [];
-            }
-            arrayBooking = arrayBooking.concat(bookingData);
-            arrayBooking = arrayBooking.concat(airbnbData);
-            arrayBooking = arrayBooking.concat(blackData);
-
-            // Dell'arrayBooking voglio solo le prenotazioni che hanno il campo nominativo valorizzato e il campo "Stato prenotazione", se esiste, diversa da "cancellata"
-            arrayBooking = arrayBooking.filter(booking => booking.Nominativo && (!booking.hasOwnProperty('Stato prenotazione') || booking['Stato prenotazione'].toLowerCase() != 'cancellata'));
-
-            // Converte i numeri seriali Excel in date leggibili
-            arrayBooking.forEach(booking => {
-                if (booking['Check-in']) {
-                    booking['Check-in'] = excelDateToJSDate(booking['Check-in']);
-                }
-                if (booking['Check-out']) {
-                    booking['Check-out'] = excelDateToJSDate(booking['Check-out']);
-                }
-            });
-
-            // ordina l'arrayBooking per data di arrivo (campo Check-in)
-            arrayBooking.sort((a, b) => parseItalianDate(a['Check-in']) - parseItalianDate(b['Check-in']));
-
-            selectedBookingYear = bookingYear;
-            sessionStorage.setItem('arrayBooking', JSON.stringify(arrayBooking));
-            sessionStorage.setItem('arrayBookingYear', String(selectedBookingYear));
-
-            if (cache) {
-                localStorage.setItem('arrayBooking', JSON.stringify(arrayBooking));
-                localStorage.setItem('arrayBookingYear', String(selectedBookingYear));
-            }
-
-            showListView(); // Mostra la vista lista all'avvio dell'app
-        })
-        .catch(error => {
-            yearSelect.value = String(selectedBookingYear);
-            showListView();
-            console.error('Errore durante il caricamento del file Excel:', error);
-        })
-        .finally(() => {
-            listView.setAttribute('aria-busy', 'false');
-            yearSelect.disabled = false;
-        });
-        */
 }
 
 /**
