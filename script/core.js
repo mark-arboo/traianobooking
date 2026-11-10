@@ -398,7 +398,7 @@ function showInsertBooking() {
             </div>
             <div id="bookingTaxGuestsField" class="booking-field">
                 <label for="bookingTaxGuests">Ospiti soggetti a tassa di soggiorno</label>
-                <input id="bookingTaxGuests" name="Ospiti soggetti a tassa di soggiorno" type="number" min="0" step="1" required>
+                <input id="bookingTaxGuests" name="Ospiti soggetti a tassa di soggiorno" type="number" inputmode="numeric" min="0" step="1" required>
             </div>
             <div class="booking-field booking-field-wide">
                 <label for="bookingGross">Lordo (euro)</label>
@@ -431,6 +431,9 @@ function showInsertBooking() {
     });
     form.addEventListener('input', event => {
         if (!event.target.matches('input, select, textarea')) return;
+        if (event.target.id === 'bookingCheckin' || event.target.id === 'bookingCheckout') {
+            formatBookingDateInput(event.target);
+        }
         event.target.setCustomValidity('');
         event.target.removeAttribute('aria-invalid');
     });
@@ -438,6 +441,19 @@ function showInsertBooking() {
         event.target.dataset.touched = 'true';
         updateBookingFieldError(event.target);
     }, true);
+}
+
+function formatBookingDateInput(input) {
+    const cursor = input.selectionStart ?? input.value.length;
+    const digits = input.value.replace(/\D/g, '').slice(0, 8);
+    const digitsBeforeCursor = Math.min(input.value.slice(0, cursor).replace(/\D/g, '').length, digits.length);
+    let formatted = digits.slice(0, 2);
+    if (digits.length > 2) formatted += '/' + digits.slice(2, 4);
+    if (digits.length > 4) formatted += '/' + digits.slice(4);
+
+    input.value = formatted;
+    const nextCursor = digitsBeforeCursor + (digitsBeforeCursor > 2 ? 1 : 0) + (digitsBeforeCursor > 4 ? 1 : 0);
+    input.setSelectionRange(nextCursor, nextCursor);
 }
 
 function updateBookingCleaningField(form) {
@@ -518,6 +534,14 @@ function validateBookingForm(form) {
         !data.get('Cellulare').trim() || /^[0-9 +]+$/.test(data.get('Cellulare'))
             ? '' : 'Inserisci il cellulare usando solo numeri, spazi e il carattere +.'
     );
+
+    const taxField = fields.namedItem('Ospiti soggetti a tassa di soggiorno');
+    if (!taxField.disabled) {
+        taxField.setCustomValidity(
+            /^[0-9]+$/.test(taxField.value) && Number.isSafeInteger(Number(taxField.value))
+                ? '' : 'Inserisci solo cifre da 0 a 9, senza segni o decimali.'
+        );
+    }
 
     form.querySelectorAll('input, select, textarea').forEach(field => {
         if (field.disabled) return;
