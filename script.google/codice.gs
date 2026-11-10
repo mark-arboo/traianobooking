@@ -2,8 +2,13 @@ const SPREADSHEET_ID_2026 = '1eZ2t1dVZqAiZTflLigA9y8sHzbXSVdISgmlCt8MeOyk';
 const SPREADSHEET_ID_2027 = '1ZXO7JxQZ6u9uge8QSMYn8sNmzZ7zW7b-KXsJ_64WZe0';
 
 function doGet(e) {
+  return leggiPrenotazione(e);
+}
+
+function leggiPrenotazione(e) {
 
 }
+
 
 
 function doPost(e) {

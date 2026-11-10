@@ -401,7 +401,7 @@ function showInsertBooking() {
                 <input id="bookingTaxGuests" name="Ospiti soggetti a tassa di soggiorno" type="number" inputmode="numeric" min="0" step="1" required>
             </div>
             <div class="booking-field booking-field-wide">
-                <label for="bookingGross">Lordo (euro)</label>
+                <label for="bookingGross">Guadagno Lordo (euro)</label>
                 <input id="bookingGross" name="Guadagno Lordo" type="number" inputmode="decimal" min="0" step="0.01" required>
             </div>
             <div id="bookingCleaningField" class="booking-field booking-field-wide" hidden>
@@ -457,7 +457,10 @@ function formatBookingDateInput(input) {
 }
 
 function updateBookingCleaningField(form) {
-    const isAirbnb = form.elements.namedItem('channel').value === 'Airbnb';
+    const channel = form.elements.namedItem('channel').value;
+    const isAirbnb = channel === 'Airbnb';
+    document.querySelector('label[for="bookingGross"]').textContent =
+        channel === 'Black' ? 'Guadagno Netto (euro)' : 'Guadagno Lordo (euro)';
     const field = form.elements.namedItem('Costi di pulizia');
     document.getElementById('bookingCleaningField').hidden = !isAirbnb;
     field.disabled = !isAirbnb;
@@ -468,7 +471,7 @@ function updateBookingCleaningField(form) {
         delete field.dataset.touched;
     }
 
-    const showTaxGuests = form.elements.namedItem('channel').value !== 'Black';
+    const showTaxGuests = channel !== 'Black';
     const taxField = form.elements.namedItem('Ospiti soggetti a tassa di soggiorno');
     document.getElementById('bookingTaxGuestsField').hidden = !showTaxGuests;
     taxField.disabled = !showTaxGuests;
@@ -664,14 +667,9 @@ function showListView() {
         return checkinDate >= today || checkoutDate >= today;
     });
 
-    // Inserisce i controlli della lista: aggiornamento remoto e ricerca rapida.
     // La ricerca parte ad ogni lettera digitata e filtra le card in base al nominativo.
     listView.innerHTML = `
         <div class="list-actions">
-            <button type="button" class="reload-remote-btn" onclick="loadFromRemote()">
-                <i class="fa fa-refresh" aria-hidden="true"></i>
-                Aggiorna da remoto
-            </button>
             <input type="text" class="search-input" placeholder="Cerca prenotazione" onkeyup="filterBookings(this)">
         </div>
     `; 

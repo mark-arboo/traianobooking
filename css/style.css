@@ -81,6 +81,15 @@ h1 {
   background-color: #0056b3;
 }
 
+#backToListBtn {
+  background-color: #007bff;
+  color: #fff;
+}
+
+#backToListBtn:hover {
+  background-color: #0056b3;
+}
+
 .header-button:focus-visible {
   outline: 2px solid #007bff;
   outline-offset: 2px;
@@ -281,25 +290,6 @@ button.active {
   margin-bottom: 10px;
 }
 
-.reload-remote-btn {
-  display: none; /*inline-flex;   Nascondi il pulsante per ora */
-  background-color: #007bff;
-  color: #fff;
-  border: none;
-  border-radius: 5px;
-  padding: 10px 14px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.reload-remote-btn:active {
-  transform: scale(0.98);
-}
-
 .list-actions .search-input {
   margin-bottom: 0;
 }
@@ -310,9 +300,6 @@ button.active {
     align-items: stretch;
   }
 
-  .reload-remote-btn {
-    justify-content: center;
-  }
 }
 
 
