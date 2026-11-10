@@ -1,12 +1,8 @@
 ﻿// URL applicazione Script google
-const bookingScriptURL = 'https://script.google.com/macros/s/AKfycbwLmckTZoLxkMf6cys52o2CbvI6FRHpXdC0TZQuxQ_xYjhdr4qurelNIFraEf3XdNKKQg/exec';
-// URL del foglio Google Sheets esportato in formato XLSX
-let googleSheetURL_2026 = "https://docs.google.com/spreadsheets/d/1eZ2t1dVZqAiZTflLigA9y8sHzbXSVdISgmlCt8MeOyk/export?format=xlsx";
-let googleSheetURL_2027 = "https://docs.google.com/spreadsheets/d/1ZXO7JxQZ6u9uge8QSMYn8sNmzZ7zW7b-KXsJ_64WZe0/export?format=xlsx";
-const spreadsheetURL = { 2026: googleSheetURL_2026, 2027: googleSheetURL_2027 };
+const bookingScriptURL = 'https://script.google.com/macros/s/AKfycbxNuc34pH313eGKWHpcOWe9j_yXrV08sUvlMzV2HbPXyA9IDBKHuz34Rtym_uTE4z6bCg/exec';
 
 let arrayBooking = [];
-let selectedBookingYear = 2027;
+let selectedBookingYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
 let cache = false;
@@ -60,26 +56,20 @@ function onFirstLoad() {
         showListView(); // Mostra la vista lista all'avvio dell'app
         
     } else {
-        let year = new Date().getFullYear();
-        URL = spreadsheetURL[year];
-        selectedBookingYear = year;
-        loadFromRemote(URL, year);
+        loadFromRemote(selectedBookingYear);
     }
 }
 
 function changeBookingYear(year) {
-
-    const sheetURL = spreadsheetURL[year];
-    return loadFromRemote(sheetURL, year);
+    return loadFromRemote(year);
 }
 
-function loadFromRemote(URL, year) {
-    if (URL == null || String(URL).trim() === '' || year == null || String(year).trim() === '') {
+function loadFromRemote(year) {
+    if (year == null || String(year).trim() === '') {
         year = new Date().getFullYear();
-        URL = spreadsheetURL[year];
     }
-    if (!URL) {
-        console.error('Nessun file Excel configurato per l\'anno ' + year);
+    if (!bookingScriptURL) {
+        console.error('URL della Web App Google Apps Script non configurato.');
         return Promise.resolve();
     }
 
@@ -90,6 +80,55 @@ function loadFromRemote(URL, year) {
     listView.setAttribute('aria-busy', 'true');
     listView.innerHTML = '<img src="./img/loading.gif" alt="Caricamento..." id="loadingIndicator" width="50" height="50">';
     console.log('loadFromRemote - Caricamento dati da URL');
+    const parameters = new URLSearchParams({ anno: String(bookingYear) });
+    const requestURL = bookingScriptURL + (bookingScriptURL.includes('?') ? '&' : '?') + parameters.toString();
+
+    return fetch(requestURL)
+        .then(response => {
+            if (!response.ok) throw new Error('Caricamento non riuscito (HTTP ' + response.status + ')');
+            return response.json();
+        })
+        .then(result => {
+            if (result.code !== 200) throw new Error(result.message || 'Caricamento prenotazioni non riuscito.');
+            const bookings = typeof result.data === 'string' ? JSON.parse(result.data) : result.data;
+            if (!Array.isArray(bookings)) throw new Error('Formato dati prenotazioni non valido.');
+
+            if (arrayBooking.length > 0) {
+                // Svuoto l'arrayBooking prima di concatenare i nuovi dati
+                arrayBooking = [];
+            }
+
+            arrayBooking = bookings;
+
+            // Dell'arrayBooking voglio solo le prenotazioni che hanno il campo nominativo valorizzato e il campo "Stato prenotazione", se esiste, diversa da "cancellata"
+            //arrayBooking = arrayBooking.filter(booking => booking.Nominativo && (!booking.hasOwnProperty('Stato prenotazione') || booking['Stato prenotazione'].toLowerCase() != 'cancellata'));
+
+            // ordina l'arrayBooking per data di arrivo (campo Check-in)
+            arrayBooking.sort((a, b) => parseItalianDate(a['Check-in']) - parseItalianDate(b['Check-in']));
+
+            selectedBookingYear = bookingYear;
+            sessionStorage.setItem('arrayBooking', JSON.stringify(arrayBooking));
+            sessionStorage.setItem('arrayBookingYear', String(selectedBookingYear));
+
+            if (cache) {
+                localStorage.setItem('arrayBooking', JSON.stringify(arrayBooking));
+                localStorage.setItem('arrayBookingYear', String(selectedBookingYear));
+            }
+
+            showListView();
+        })
+        .catch(error => {
+            yearSelect.value = String(selectedBookingYear);
+            showListView();
+            console.error('Errore durante il caricamento del file Excel:', error);
+        })
+        .finally(() => {
+            listView.setAttribute('aria-busy', 'false');
+            yearSelect.disabled = false;
+        });
+
+
+    /*
     // legge i primi 3 sheet di un file excel letto da una URL 
     return fetch(URL)
         .then(response => {
@@ -152,6 +191,7 @@ function loadFromRemote(URL, year) {
             listView.setAttribute('aria-busy', 'false');
             yearSelect.disabled = false;
         });
+        */
 }
 
 /**

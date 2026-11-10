@@ -1,12 +1,62 @@
 const SPREADSHEET_ID_2026 = '1eZ2t1dVZqAiZTflLigA9y8sHzbXSVdISgmlCt8MeOyk';
 const SPREADSHEET_ID_2027 = '1ZXO7JxQZ6u9uge8QSMYn8sNmzZ7zW7b-KXsJ_64WZe0';
+const spreadsheetIds = { 2026: SPREADSHEET_ID_2026, 2027: SPREADSHEET_ID_2027 };
 
 function doGet(e) {
   return leggiPrenotazione(e);
 }
 
 function leggiPrenotazione(e) {
+  
+  const year = String(e && e.parameter && e.parameter.anno || '').trim();
+  let result;
+  if (!Object.prototype.hasOwnProperty.call(spreadsheetIds, year)) {
+    result = { code: 400, message: 'Parametro anno mancante o non supportato.', data: [] };
+  } else {
+    try {
+      const spreadsheet = SpreadsheetApp.openById(spreadsheetIds[year]);
+      const sheets = spreadsheet.getSheets();
+      const timeZone = 'Europe/Rome';
+      const data = [];
+      const channels = ['booking', 'airbnb', 'black'];
 
+      [1, 2, 3].forEach(index => {
+        const sheet = sheets[index];
+        if (!sheet) throw new Error('Sheet con indice ' + index + ' non trovato.');
+        const rows = sheet.getDataRange().getValues();
+        if (!rows.length) return;
+        const headers = rows[0].map(header => String(header).trim());
+        const nameColumn = headers.indexOf('Nominativo');
+        const statusColumn = headers.indexOf('Stato prenotazione');
+
+        rows.slice(1).forEach(row => {
+          if (!String(row[nameColumn] ?? '').trim()) return;
+          if (String(row[statusColumn] ?? '').trim().toLowerCase() === 'cancellata') return;
+          const entry = {};
+          let hasData = false;
+          headers.forEach((header, column) => {
+            if (!header) return;
+            const value = row[column];
+            entry[header] = (header === 'Check-in' || header === 'Check-out') && value instanceof Date
+              ? Utilities.formatDate(value, timeZone, 'dd/MM/yyyy') : value;
+            if (header === 'Cellulare' && typeof value === 'string') {
+              entry[header] = value.replace(/^\\+/, '+');
+            }
+            if (value !== '' && value !== null && value !== undefined) hasData = true;
+          });
+          entry.channel = channels[index - 1];
+          if (hasData) data.push(entry);
+        });
+      });
+
+      result = { code: 200, message: 'Lettura completata.', data: data };
+    } catch (error) {
+      result = { code: 500, message: error.toString(), data: [] };
+    }
+  }
+
+  return ContentService.createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 
@@ -23,7 +73,6 @@ function savePrenotazione(e) {
     const checkout = parseBookingDate(request.checkout);
     if (checkout.serial <= checkin.serial) throw new Error('Il check-out deve essere successivo al check-in.');
 
-    const spreadsheetIds = { 2026: SPREADSHEET_ID_2026, 2027: SPREADSHEET_ID_2027 };
     const spreadsheetId = spreadsheetIds[checkin.year];
     if (!spreadsheetId) throw new Error('Anno del check-in non supportato.');
 
