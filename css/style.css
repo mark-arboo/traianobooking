@@ -236,7 +236,7 @@ p {
 
 .tabbar {
   position: fixed;
-  bottom: 20px;
+  bottom: 25px;
   left: 20%;
   right: 20%;
   width: 60%;
@@ -284,7 +284,7 @@ p {
     left: 10%;
     right: 10%;
     width: 80%;
-    bottom: 12px;
+    bottom: 20px;
     padding: 4px;
   }
 
