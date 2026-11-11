@@ -279,6 +279,31 @@ p {
   font-weight: 500;
 }
 
+@media (max-width: 480px) {
+  .tabbar {
+    left: 5%;
+    right: 5%;
+    width: 90%;
+    bottom: 12px;
+    padding: 6px;
+  }
+
+  .tabButton {
+    min-height: 60px;
+    padding: 5px 4px;
+    gap: 4px;
+    font-size: 14px;
+  }
+
+  .tabButton i {
+    font-size: 26px;
+  }
+
+  .tabButton span {
+    font-size: 14px;
+  }
+}
+
 button.active {
     color: #007bff;
     background-color: var(--color-tabbar-background);
