@@ -25,23 +25,54 @@ h1 {
   gap: 12px;
 }
 
+.page-title-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
 .page-header h1 {
   flex: 0 1 auto;
   min-width: 0;
   overflow-wrap: anywhere;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
-.booking-year-select {
-  flex: 0 0 88px;
-  width: 88px;
-  min-height: 44px;
-  padding: 8px;
-  border: 1px solid #bbb;
+.booking-year-selector {
+  display: flex;
+  gap: 8px;
+}
+
+.booking-year-selector[hidden] {
+  display: none;
+}
+
+.booking-year-button {
+  padding: 8px 14px;
+  border: 1px solid #007bff;
   border-radius: 5px;
   background-color: #fff;
-  color: #333;
+  color: #007bff;
   font: inherit;
-  font-size: 16px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.booking-year-button.active {
+  background-color: #007bff;
+  color: #fff;
+}
+
+.booking-year-button:disabled {
+  cursor: wait;
+}
+
+.booking-year-button:focus-visible {
+  outline: 2px solid #0056b3;
+  outline-offset: 2px;
 }
 
 @media (max-width: 480px) {

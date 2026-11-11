@@ -3,6 +3,7 @@ const bookingScriptURL = 'https://script.google.com/macros/s/AKfycbwbXSXgoH00PXl
 
 let arrayBooking = [];
 let selectedBookingYear = new Date().getFullYear();
+let pendingBookingYear = null;
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
 let cache = false;
@@ -61,7 +62,12 @@ function onFirstLoad() {
 }
 
 function changeBookingYear(year) {
-    return loadFromRemote(year);
+    pendingBookingYear = Number(year);
+    updateBookingYearSelection();
+    return loadFromRemote(year).finally(() => {
+        pendingBookingYear = null;
+        updateBookingYearSelection();
+    });
 }
 
 function loadFromRemote(year) {
@@ -74,8 +80,8 @@ function loadFromRemote(year) {
     }
 
     const bookingYear = Number(year);
-    const yearSelect = document.getElementById('bookingYearSelect');
-    yearSelect.disabled = true;
+    const yearButtons = document.querySelectorAll('.booking-year-button');
+    yearButtons.forEach(button => { button.disabled = true; });
     const listView = document.getElementById('listView');
     listView.setAttribute('aria-busy', 'true');
     listView.innerHTML = '<img src="./img/loading.gif" alt="Caricamento..." id="loadingIndicator" width="50" height="50">';
@@ -118,13 +124,13 @@ function loadFromRemote(year) {
             showListView();
         })
         .catch(error => {
-            yearSelect.value = String(selectedBookingYear);
+            updateBookingYearSelection();
             showListView();
             console.error('Errore durante il caricamento del file Excel:', error);
         })
         .finally(() => {
             listView.setAttribute('aria-busy', 'false');
-            yearSelect.disabled = false;
+            yearButtons.forEach(button => { button.disabled = false; });
         });
 
 }
@@ -147,6 +153,7 @@ function onPageRefresh() {
 
 
 function initializeApp() {
+    updateBookingYearSelection();
 
     if (isFirstLoad()) {
         onFirstLoad();
@@ -168,7 +175,7 @@ function showGraphicView() {
     document.getElementById('graphicViewBtn').classList.add('active');
 
     // Aggiorna il titolo
-    updateViewHeader(`Report ${selectedBookingYear}`, 'grafico');
+    updateViewHeader(`Revenue ${selectedBookingYear}`, 'grafico');
 
     renderGraphicView();
   
@@ -324,12 +331,19 @@ function calculateYearlyRevenue(year) {
 
 function updateViewHeader(title, panel) {
     document.querySelector('h1').textContent = title;
-    const yearSelect = document.getElementById('bookingYearSelect');
-    yearSelect.hidden = panel !== 'lista';
-    yearSelect.value = String(selectedBookingYear);
+    document.getElementById('bookingYearSelector').hidden = panel !== 'lista';
+    updateBookingYearSelection();
     document.getElementById('insertBookingBtn').hidden = panel !== 'lista';
     document.getElementById('backToListBtn').hidden = panel !== 'inserisci';
     document.getElementById('insertBookingView').classList.toggle('active', panel === 'inserisci');
+}
+
+function updateBookingYearSelection() {
+    document.querySelectorAll('.booking-year-button').forEach(button => {
+        const isSelected = button.dataset.year === String(pendingBookingYear ?? selectedBookingYear);
+        button.classList.toggle('active', isSelected);
+        button.setAttribute('aria-pressed', String(isSelected));
+    });
 }
 
 function showInsertBooking() {

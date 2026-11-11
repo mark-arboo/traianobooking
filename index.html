@@ -28,11 +28,13 @@
       <button id="backToListBtn" type="button" class="header-button" onclick="showListView()" aria-label="Torna alle prenotazioni" title="Torna alle prenotazioni" hidden>
         <i class="fa fa-arrow-left" aria-hidden="true"></i>
       </button>
-      <h1>Prenotazioni</h1>
-      <select id="bookingYearSelect" class="booking-year-select" aria-label="Anno prenotazioni" onchange="changeBookingYear(this.value)">
-        <option value="2026">2026</option>
-        <option value="2027" selected>2027</option>
-      </select>
+      <div class="page-title-group">
+        <h1>Prenotazioni</h1>
+        <div id="bookingYearSelector" class="booking-year-selector" role="group" aria-label="Anno prenotazioni">
+          <button type="button" class="booking-year-button" data-year="2027" aria-pressed="false" onclick="changeBookingYear('2027')">2027</button>
+          <button type="button" class="booking-year-button" data-year="2026" aria-pressed="false" onclick="changeBookingYear('2026')">2026</button>
+        </div>
+      </div>
       <button id="insertBookingBtn" type="button" class="header-button" onclick="showInsertBooking()" aria-label="Nuova prenotazione" title="Nuova prenotazione">
         <i class="fa fa-plus" aria-hidden="true"></i>
       </button>
@@ -41,15 +43,15 @@
     <div class="tabbar">
          <button id="listViewBtn" class="tabButton active" onclick="showListView()">
             <i class="fa fa-list" aria-hidden="true"></i>
-            <span>Prenotazioni</span>
+            <span>Bookings</span>
          </button>
          <button id="calendarViewBtn" class="tabButton" onclick="showCalendarView()">
             <i class="fa fa-calendar" aria-hidden="true"></i>
-            <span>Disponibilità</span>
+            <span>Calendar</span>
          </button>
          <button id="graphicViewBtn" class="tabButton" onclick="showGraphicView()">
-            <i class="fa fa-bar-chart" aria-hidden="true"></i>
-            <span>Report</span>
+            <i class="fa fa fa-university" aria-hidden="true"></i>
+            <span>Revenue</span>
          </button>
     </div>
 
