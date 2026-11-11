@@ -53,8 +53,15 @@
 
     <div class="content">
         <div id="listView" class="view active">
-            <img src="./img/loading.gif" alt="Loading..." id="loadingIndicator" width="50" height="50">
-             <!-- La lista delle prenotazioni verrà generata qui dinamicamente -->
+          <div class="list-actions">
+            <input type="text" class="search-input" placeholder="Cerca prenotazione" onkeyup="filterBookings(this)">
+            <div id="bookingYearSelector" class="booking-year-selector" role="group" aria-label="Anno prenotazioni">
+              <button type="button" class="booking-year-button" data-year="2027" aria-pressed="false" onclick="changeBookingYear('2027')">2027</button>
+              <button type="button" class="booking-year-button" data-year="2026" aria-pressed="false" onclick="changeBookingYear('2026')">2026</button>
+            </div>
+          </div>
+          <img src="./img/loading.gif" alt="Caricamento..." id="loadingIndicator" width="50" height="50">
+          <div id="bookingItems"></div>
         </div>
 
         <div id="calendarView" class="view">
