@@ -25,19 +25,15 @@
   </head>
   <body onload="initializeApp()">
     <header class="page-header">
-      <button id="backToListBtn" type="button" class="header-button" onclick="showListView()" aria-label="Torna alle prenotazioni" title="Torna alle prenotazioni" hidden>
-        <i class="fa fa-arrow-left" aria-hidden="true"></i>
-      </button>
-      <div class="page-title-group">
+      <div class="page-header-main">
+        <button id="backToListBtn" type="button" class="header-button" onclick="showListView()" aria-label="Torna alle prenotazioni" title="Torna alle prenotazioni" hidden>
+          <i class="fa fa-arrow-left" aria-hidden="true"></i>
+        </button>
         <h1>Prenotazioni</h1>
-        <div id="bookingYearSelector" class="booking-year-selector" role="group" aria-label="Anno prenotazioni">
-          <button type="button" class="booking-year-button" data-year="2027" aria-pressed="false" onclick="changeBookingYear('2027')">2027</button>
-          <button type="button" class="booking-year-button" data-year="2026" aria-pressed="false" onclick="changeBookingYear('2026')">2026</button>
-        </div>
+        <button id="insertBookingBtn" type="button" class="header-button" onclick="showInsertBooking()" aria-label="Nuova prenotazione" title="Nuova prenotazione">
+          <i class="fa fa-plus" aria-hidden="true"></i>
+        </button>
       </div>
-      <button id="insertBookingBtn" type="button" class="header-button" onclick="showInsertBooking()" aria-label="Nuova prenotazione" title="Nuova prenotazione">
-        <i class="fa fa-plus" aria-hidden="true"></i>
-      </button>
     </header>
     
     <div class="tabbar">

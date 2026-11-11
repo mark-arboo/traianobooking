@@ -13,7 +13,7 @@ body {
 }
 
 h1 {
-  font-size:32px;
+  font-size:36px;
   margin-top: 20px;
   margin-bottom: 20px;
   font-weight: bold;
@@ -21,15 +21,19 @@ h1 {
 
 .page-header {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.page-header-main {
+  display: flex;
   align-items: center;
   gap: 12px;
 }
 
 .page-title-group {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
+  flex: 0 1 auto;
   min-width: 0;
 }
 
@@ -53,7 +57,7 @@ h1 {
 .booking-year-button {
   padding: 8px 14px;
   border: 1px solid #007bff;
-  border-radius: 5px;
+  border-radius: 20px;
   background-color: #fff;
   color: #007bff;
   font: inherit;
@@ -81,7 +85,11 @@ h1 {
   }
 
   .page-header h1 {
-    font-size: 24px;
+    font-size: 28px;
+  }
+
+  .page-header-main {
+    gap: 8px;
   }
 }
 
@@ -316,8 +324,9 @@ button.active {
 
 .list-actions {
   display: flex;
+  flex-direction: column;
   gap: 10px;
-  align-items: center;
+  align-items: stretch;
   margin-bottom: 10px;
 }
 

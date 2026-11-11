@@ -84,7 +84,6 @@ function loadFromRemote(year) {
     yearButtons.forEach(button => { button.disabled = true; });
     const listView = document.getElementById('listView');
     listView.setAttribute('aria-busy', 'true');
-    listView.innerHTML = '<img src="./img/loading.gif" alt="Caricamento..." id="loadingIndicator" width="50" height="50">';
     console.log('loadFromRemote - Caricamento dati da URL');
     const parameters = new URLSearchParams({ anno: String(bookingYear) });
     const requestURL = bookingScriptURL + (bookingScriptURL.includes('?') ? '&' : '?') + parameters.toString();
@@ -130,7 +129,7 @@ function loadFromRemote(year) {
         })
         .finally(() => {
             listView.setAttribute('aria-busy', 'false');
-            yearButtons.forEach(button => { button.disabled = false; });
+            document.querySelectorAll('.booking-year-button').forEach(button => { button.disabled = false; });
         });
 
 }
@@ -331,7 +330,6 @@ function calculateYearlyRevenue(year) {
 
 function updateViewHeader(title, panel) {
     document.querySelector('h1').textContent = title;
-    document.getElementById('bookingYearSelector').hidden = panel !== 'lista';
     updateBookingYearSelection();
     document.getElementById('insertBookingBtn').hidden = panel !== 'lista';
     document.getElementById('backToListBtn').hidden = panel !== 'inserisci';
@@ -660,8 +658,13 @@ function showListView() {
     listView.innerHTML = `
         <div class="list-actions">
             <input type="text" class="search-input" placeholder="Cerca prenotazione" onkeyup="filterBookings(this)">
+            <div id="bookingYearSelector" class="booking-year-selector" role="group" aria-label="Anno prenotazioni">
+                <button type="button" class="booking-year-button" data-year="2027" aria-pressed="false" onclick="changeBookingYear('2027')">2027</button>
+                <button type="button" class="booking-year-button" data-year="2026" aria-pressed="false" onclick="changeBookingYear('2026')">2026</button>
+            </div>
         </div>
     `; 
+    updateBookingYearSelection();
 
     // visualizza una div per ogni prenotazione con i campi Nominativo, Check-in, Check-out, Notti, Numero Ospiti
     filteredBookings.forEach(booking => {
