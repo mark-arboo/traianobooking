@@ -281,26 +281,26 @@ p {
 
 @media (max-width: 480px) {
   .tabbar {
-    left: 5%;
-    right: 5%;
-    width: 90%;
+    left: 10%;
+    right: 10%;
+    width: 80%;
     bottom: 12px;
-    padding: 6px;
+    padding: 4px;
   }
 
   .tabButton {
-    min-height: 60px;
-    padding: 5px 4px;
-    gap: 4px;
-    font-size: 14px;
+    min-height: 50px;
+    padding: 3px 4px;
+    gap: 3px;
+    font-size: 12px;
   }
 
   .tabButton i {
-    font-size: 26px;
+    font-size: 22px;
   }
 
   .tabButton span {
-    font-size: 14px;
+    font-size: 12px;
   }
 }
 
