@@ -867,6 +867,15 @@ function printCard(component, booking) {
             <p><i class="fa fa-phone" aria-hidden="true"></i> ${phone ? phone.replace(/\\/g, '+') : ' - '}</p>
             <p><i class="fa fa-sticky-note-o" aria-hidden="true"></i> ${booking.Note && booking.hasOwnProperty("Note") ? booking.Note : ' - '}</p>
             <div class="logo"><img src="./img/${booking.channel}.png" alt="Logo" width="40"></div>
+            <details class="booking-actions">
+                <summary class="booking-actions-toggle" aria-label="Altre azioni" title="Altre azioni">
+                    <i class="fa fa-ellipsis-v" aria-hidden="true"></i>
+                </summary>
+                <div class="booking-actions-menu">
+                    <button type="button"><i class="fa fa-pencil" aria-hidden="true"></i> Modifica</button>
+                    <button type="button" class="delete-action"><i class="fa fa-trash" aria-hidden="true"></i> Elimina</button>
+                </div>
+            </details>
             <div class="pay">
                 <span class="lordo" style="display:none;">${booking['Guadagno Lordo'] && booking.hasOwnProperty('Guadagno Lordo') ? formatEuro(booking['Guadagno Lordo']) + ' € /' : ''}</span>
                 <span class="netto" style="display:none;">${booking['Guadagno Netto'] && booking.hasOwnProperty('Guadagno Netto') ? formatEuro(booking['Guadagno Netto']) + ' €' : ''}</span>

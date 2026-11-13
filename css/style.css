@@ -392,13 +392,85 @@ button.active {
 
 .logo {
   position: absolute;
-  top: 10px;
+  bottom: 10px;
   right: 10px;
+}
+
+.booking-actions {
+  position: absolute;
+  top: 7px;
+  right: 6px;
+  z-index: 5;
+}
+
+.booking-actions-toggle {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 50%;
+  color: #555;
+  cursor: pointer;
+  list-style: none;
+}
+
+.booking-actions-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.booking-actions-toggle:hover,
+.booking-actions[open] .booking-actions-toggle {
+  background-color: #f0f0f0;
+}
+
+.booking-actions-toggle:focus-visible {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+.booking-actions-toggle i {
+  font-size: 20px;
+}
+
+.booking-actions-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  display: grid;
+  min-width: 160px;
+  padding: 4px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background-color: #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+}
+
+.booking-actions-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #333;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.booking-actions-menu button:hover {
+  background-color: #f2f2f2;
+}
+
+.booking-actions-menu .delete-action {
+  color: #c62828;
 }
 
 .pay {
   position: relative;
-  text-align: right;
+  text-align: left;
   font-size: 20px;
   font-weight: bold;
 }
