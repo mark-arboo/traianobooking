@@ -1,5 +1,5 @@
 ﻿// URL applicazione Script google
-const bookingScriptURL = 'https://script.google.com/macros/s/AKfycbwbXSXgoH00PXlEIfMVuzIt9kO6NCZ9bOmlhvjdELNs5v3bwyGtZR9rMmoDOLtX5GqM/exec';
+const bookingScriptURL = 'https://script.google.com/macros/s/AKfycbxWiUDxm3PagtSANuWxTaVnZdXtDHMZHR5ioDIbSFi4ioI7iU9sFwzD_CtdNHCupvFh/exec';
 
 let arrayBooking = [];
 let selectedBookingYear = new Date().getFullYear();
@@ -7,6 +7,7 @@ let pendingBookingYear = null;
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
 let cache = false;
+const pendingBookingDeletions = new WeakSet();
 
 /**
  * Controlla se è la prima volta che l'applicazione viene caricata
@@ -87,7 +88,7 @@ function loadFromRemote(year) {
     document.getElementById('loadingIndicator').hidden = false;
     listView.setAttribute('aria-busy', 'true');
     console.log('loadFromRemote - Caricamento dati da URL');
-    const parameters = new URLSearchParams({ anno: String(bookingYear) });
+    const parameters = new URLSearchParams({ anno: String(bookingYear), action: 'leggi' });
     const requestURL = bookingScriptURL + (bookingScriptURL.includes('?') ? '&' : '?') + parameters.toString();
 
     return fetch(requestURL)
@@ -346,13 +347,13 @@ function updateBookingYearSelection() {
     });
 }
 
-function showInsertBooking() {
+function showInsertBooking(booking = null) {
     sessionStorage.setItem('lastActivePanel', 'inserisci');
     document.querySelectorAll('.view, .tabButton').forEach(element => {
         element.classList.remove('active');
     });
     document.getElementById('listViewBtn').classList.add('active');
-    updateViewHeader('Nuova Prenotazione', 'inserisci');
+    updateViewHeader(booking ? 'Modifica Prenotazione' : 'Nuova Prenotazione', 'inserisci');
 
     const container = document.getElementById('insertBookingView');
     container.innerHTML = `
@@ -409,6 +410,30 @@ function showInsertBooking() {
     `;
 
     const form = document.getElementById('bookingForm');
+    form.dataset.action = booking ? 'modificaPrenotazione' : 'savePrenotazione';
+    if (booking) {
+        form.dataset.year = String(parseItalianDate(booking['Check-in']).getFullYear());
+        const channels = { booking: 'Booking.com', 'booking.com': 'Booking.com', airbnb: 'Airbnb', black: 'Black' };
+        const channel = channels[String(booking.channel).toLowerCase()];
+        const values = {
+            channel: channel,
+            Nominativo: booking.Nominativo,
+            Cellulare: String(booking.Cellulare ?? '').replace(/\\/g, '+'),
+            'Check-in': booking['Check-in'],
+            'Check-out': booking['Check-out'],
+            'Numero Ospiti': booking['Numero Ospiti'],
+            'Ospiti soggetti a tassa di soggiorno': booking['Ospiti soggetti a tassa di soggiorno'],
+            'Guadagno Lordo': channel === 'Black' ? booking['Guadagno Netto'] : booking['Guadagno Lordo'],
+            'Costi di pulizia': booking['Costi di pulizia'],
+            Note: booking.Note
+        };
+        Object.entries(values).forEach(([name, value]) => {
+            form.elements.namedItem(name).value = value ?? '';
+        });
+        form.elements.namedItem('channel').disabled = true;
+        form.elements.namedItem('Nominativo').readOnly = true;
+        form.querySelector('button[type="submit"]').textContent = 'Salva modifiche';
+    }
     updateBookingCleaningField(form);
     form.elements.namedItem('channel').addEventListener('change', () => updateBookingCleaningField(form));
     form.addEventListener('submit', submitBooking);
@@ -552,6 +577,7 @@ async function submitBooking(event) {
     if (form.dataset.saving === 'true') return;
     const bookingData = collectBookingData(event);
     if (!bookingData) return;
+    const updating = form.dataset.action === 'modificaPrenotazione';
 
     const status = form.querySelector('#bookingSaveStatus');
     status.hidden = false;
@@ -572,7 +598,7 @@ async function submitBooking(event) {
         const response = await fetch(bookingScriptURL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action: 'savePrenotazione', ...bookingData })
+            body: JSON.stringify({ action: form.dataset.action, ...bookingData })
         });
         if (!response.ok) throw new Error('Risposta HTTP ' + response.status);
         const result = await response.json();
@@ -582,13 +608,13 @@ async function submitBooking(event) {
         }
 
         status.textContent = 'Prenotazione salvata.';
-        form.reset();
+        if (!updating) form.reset();
         await changeBookingYear(String(result.year));
     } catch (error) {
         status.textContent = 'Salvataggio non confermato. Verifica il foglio prima di riprovare. ' + error.message;
     } finally {
         controls.forEach((control, index) => { control.disabled = disabledStates[index]; });
-        button.textContent = 'Inserisci prenotazione';
+        button.textContent = updating ? 'Salva modifiche' : 'Inserisci prenotazione';
         form.dataset.saving = 'false';
         updateBookingCleaningField(form);
     }
@@ -608,7 +634,7 @@ function collectBookingData(event) {
         maximumFractionDigits: 2
     });
     const bookingData = {
-        channel: data.get('channel'),
+        channel: form.elements.namedItem('channel').value,
         nominativo: data.get('Nominativo').trim(),
         cellulare: data.get('Cellulare').trim(),
         checkin: data.get('Check-in'),
@@ -617,6 +643,9 @@ function collectBookingData(event) {
         note: data.get('Note').trim(),
         guadagnoLordo: euroFormatter.format(Number(data.get('Guadagno Lordo').replace(',', '.')))
     };
+    if (form.dataset.action === 'modificaPrenotazione') {
+        bookingData.anno = Number(form.dataset.year);
+    }
 
     if (bookingData.channel !== 'Black') {
         bookingData.ospitiSoggettiATassa = Number(data.get('Ospiti soggetti a tassa di soggiorno'));
@@ -872,7 +901,7 @@ function printCard(component, booking) {
                     <i class="fa fa-ellipsis-v" aria-hidden="true"></i>
                 </summary>
                 <div class="booking-actions-menu">
-                    <button type="button"><i class="fa fa-pencil" aria-hidden="true"></i> Modifica</button>
+                    <button type="button" class="edit-action"><i class="fa fa-pencil" aria-hidden="true"></i> Modifica</button>
                     <button type="button" class="delete-action"><i class="fa fa-trash" aria-hidden="true"></i> Elimina</button>
                 </div>
             </details>
@@ -889,7 +918,93 @@ function printCard(component, booking) {
         payElement.addEventListener('click', function() {
             showHidePayDetails();
         });
+        const deleteButton = component.querySelector('.delete-action');
+        deleteButton.addEventListener('click', () => deleteBooking(booking, deleteButton));
+        const editButton = component.querySelector('.edit-action');
+        editButton.addEventListener('click', () => showInsertBooking(booking));
  
+}
+
+function confirmBookingDeletion(booking) {
+    return new Promise(resolve => {
+        const dialog = document.createElement('dialog');
+        dialog.className = 'booking-delete-dialog';
+        dialog.setAttribute('aria-labelledby', 'bookingDeleteTitle');
+        dialog.setAttribute('aria-describedby', 'bookingDeleteDescription');
+        dialog.innerHTML = `
+            <form method="dialog">
+                <div class="booking-delete-heading">
+                    <i class="fa fa-trash" aria-hidden="true"></i>
+                    <h2 id="bookingDeleteTitle">Elimina prenotazione</h2>
+                </div>
+                <p id="bookingDeleteDescription">Confermi la cancellazione della prenotazione di <strong></strong>?</p>
+                <div class="booking-delete-buttons">
+                    <button type="submit" value="cancel" autofocus>Annulla</button>
+                    <button type="submit" value="delete" class="booking-delete-confirm">
+                        <i class="fa fa-trash" aria-hidden="true"></i> Elimina
+                    </button>
+                </div>
+            </form>
+        `;
+        dialog.querySelector('strong').textContent = booking.Nominativo;
+        dialog.addEventListener('cancel', event => {
+            event.preventDefault();
+            dialog.close('cancel');
+        });
+        dialog.addEventListener('close', () => {
+            const confirmed = dialog.returnValue === 'delete';
+            dialog.remove();
+            resolve(confirmed);
+        }, { once: true });
+        document.body.appendChild(dialog);
+        dialog.showModal();
+    });
+}
+
+async function deleteBooking(booking, button) {
+    if (pendingBookingDeletions.has(booking)) return;
+
+    const year = parseItalianDate(booking['Check-in']).getFullYear();
+    pendingBookingDeletions.add(booking);
+    button.disabled = true;
+    try {
+        if (!await confirmBookingDeletion(booking)) return;
+        const response = await fetch(bookingScriptURL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+                action: 'cancellaPrenotazione',
+                anno: year,
+                channel: booking.channel,
+                nominativo: booking.Nominativo
+            })
+        });
+        if (!response.ok) throw new Error('Risposta HTTP ' + response.status);
+        const result = await response.json();
+        if (result.status !== 'success') throw new Error(result.message || 'Cancellazione non riuscita.');
+
+        arrayBooking = arrayBooking.filter(item => item !== booking);
+        try {
+            sessionStorage.setItem('arrayBooking', JSON.stringify(arrayBooking));
+            sessionStorage.setItem('arrayBookingYear', String(selectedBookingYear));
+            if (localStorage.getItem('arrayBookingYear') === String(year)) {
+                localStorage.removeItem('arrayBooking');
+                localStorage.removeItem('arrayBookingYear');
+            }
+        } catch (error) {
+            console.error('Aggiornamento cache dopo la cancellazione non riuscito:', error);
+        }
+
+        const panel = sessionStorage.getItem('lastActivePanel');
+        if (panel === 'calendario') showCalendarView();
+        else if (panel === 'grafico') showGraphicView();
+        else if (panel === 'lista') showListView();
+    } catch (error) {
+        window.alert('Cancellazione non confermata. Verifica il foglio prima di riprovare. ' + error.message);
+    } finally {
+        pendingBookingDeletions.delete(booking);
+        button.disabled = false;
+    }
 }
 
 function showHidePayDetails() {

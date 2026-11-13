@@ -3,8 +3,108 @@ const SPREADSHEET_ID_2027 = '1ZXO7JxQZ6u9uge8QSMYn8sNmzZ7zW7b-KXsJ_64WZe0';
 const spreadsheetIds = { 2026: SPREADSHEET_ID_2026, 2027: SPREADSHEET_ID_2027 };
 
 function doGet(e) {
-  return leggiPrenotazione(e);
+
+  const action = e && e.parameter ? e.parameter.action : null;
+
+  switch (action) {
+    case 'leggi':
+      return leggiPrenotazione(e);
+    default:
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "error",
+        message: "Azione GET non supportata"
+      })).setMimeType(ContentService.MimeType.JSON);
+  }
 }
+
+function doPost(e) {
+
+  const action = getActionFromRequest(e);
+
+  switch (action) {
+    case 'savePrenotazione':
+      return savePrenotazione(e);
+    case 'cancellaPrenotazione':
+      return cancellaPrenotazione(e);
+    case 'modificaPrenotazione':
+      return modificaPrenotazione(e);
+    default:
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "error",
+        message: "Azione POST non supportata"
+      })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function getActionFromRequest(e) {
+  const queryAction = e && e.parameter ? e.parameter.action : null;
+  if (queryAction) {
+    return queryAction;
+  }
+
+  try {
+    if (e && e.postData && e.postData.contents) {
+      const body = JSON.parse(e.postData.contents);
+      return body && body.action ? body.action : null;
+    }
+  } catch (error) {
+    // Ignora body non JSON
+  }
+
+  return null;
+}
+
+function modificaPrenotazione(e) {
+  return writePrenotazione(e, true);
+}
+
+function cancellaPrenotazione(e) {
+  let lock;
+  try {
+    const request = JSON.parse(e.postData.contents);
+    const year = requiredBookingText(request.anno, 'Anno');
+    if (!Object.prototype.hasOwnProperty.call(spreadsheetIds, year)) {
+      throw new Error('Anno non supportato.');
+    }
+    const channels = { 'booking.com': 'Booking.com', booking: 'Booking.com', airbnb: 'Airbnb', black: 'Black' };
+    const channelKey = requiredBookingText(request.channel, 'Canale').toLowerCase();
+    if (!Object.prototype.hasOwnProperty.call(channels, channelKey)) throw new Error('Canale non valido.');
+    const channel = channels[channelKey];
+    const nominativo = requiredBookingText(request.nominativo, 'Nominativo');
+
+    lock = LockService.getScriptLock();
+    if (!lock.tryLock(30000)) throw new Error('Salvataggio occupato. Riprova tra poco.');
+    const spreadsheet = SpreadsheetApp.openById(spreadsheetIds[year]);
+    const sheet = spreadsheet.getSheets().find(candidate => candidate.getName().toLowerCase() === channel.toLowerCase());
+    if (!sheet) throw new Error('Foglio non trovato: ' + channel);
+    const data = sheet.getDataRange().getValues();
+    const headers = (data[0] || []).map(header => String(header).trim().toLowerCase());
+    const nameColumn = headers.indexOf('nominativo');
+    const statusColumn = headers.indexOf('stato prenotazione');
+    if (nameColumn === -1 || statusColumn === -1) {
+      throw new Error('Colonna Nominativo o Stato prenotazione mancante nel foglio ' + channel);
+    }
+    const rowIndex = data.findIndex((row, index) => index > 0 && String(row[nameColumn] ?? '').trim() === nominativo);
+    if (rowIndex === -1) throw new Error('Prenotazione non trovata.');
+    sheet.getRange(rowIndex + 1, statusColumn + 1).setValue('cancellata');
+    SpreadsheetApp.flush();
+
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'success',
+      year: Number(year),
+      channel: channel,
+      row: rowIndex + 1
+    })).setMimeType(ContentService.MimeType.TEXT);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'error',
+      message: error.toString()
+    })).setMimeType(ContentService.MimeType.TEXT);
+  } finally {
+    if (lock && lock.hasLock()) lock.releaseLock();
+  }
+}
+
 
 function leggiPrenotazione(e) {
   
@@ -61,11 +161,13 @@ function leggiPrenotazione(e) {
 
 
 
-function doPost(e) {
-  return savePrenotazione(e);
-}
+
 
 function savePrenotazione(e) {
+  return writePrenotazione(e, false);
+}
+
+function writePrenotazione(e, updating) {
   let lock;
   try {
     const request = JSON.parse(e.postData.contents);
@@ -73,12 +175,14 @@ function savePrenotazione(e) {
     const checkout = parseBookingDate(request.checkout);
     if (checkout.serial <= checkin.serial) throw new Error('Il check-out deve essere successivo al check-in.');
 
-    const spreadsheetId = spreadsheetIds[checkin.year];
-    if (!spreadsheetId) throw new Error('Anno del check-in non supportato.');
+    const year = updating ? requiredBookingText(request.anno, 'Anno') : String(checkin.year);
+    if (!Object.prototype.hasOwnProperty.call(spreadsheetIds, year)) throw new Error('Anno non supportato.');
+    const spreadsheetId = spreadsheetIds[year];
 
     const channels = { 'booking.com': 'Booking.com', booking: 'Booking.com', airbnb: 'Airbnb', black: 'Black' };
-    const channel = channels[String(request.channel).toLowerCase()];
-    if (!channel) throw new Error('Canale non valido.');
+    const channelKey = requiredBookingText(request.channel, 'Canale').toLowerCase();
+    if (!Object.prototype.hasOwnProperty.call(channels, channelKey)) throw new Error('Canale non valido.');
+    const channel = channels[channelKey];
 
     const nominativo = requiredBookingText(request.nominativo, 'Nominativo');
     const cellulare = String(request.cellulare ?? '').trim();
@@ -95,13 +199,13 @@ function savePrenotazione(e) {
 
     const valuesByHeader = {
       Nominativo: bookingSheetText(nominativo),
-      Cellulare: bookingSheetText(cellulare),
+      Cellulare: bookingSheetText(cellulare.replace(/\+/g, '\\')),
       'Check-in': checkin.serial,
       'Check-out': checkout.serial,
       'Numero Ospiti': bookingSheetText(numeroOspiti),
-      Note: bookingSheetText(String(request.note || '').trim()),
-      'Stato prenotazione': 'prenotata'
+      Note: bookingSheetText(String(request.note || '').trim())
     };
+    if (!updating) valuesByHeader['Stato prenotazione'] = 'prenotata';
     if (channel === 'Airbnb') valuesByHeader['Costi di pulizia'] = parseBookingAmount(request.costiPulizia);
     if (channel === 'Airbnb' || channel === 'Booking.com' ) {
       valuesByHeader['Guadagno Lordo'] = parseBookingAmount(request.guadagnoLordo);
@@ -115,15 +219,17 @@ function savePrenotazione(e) {
     const sheet = spreadsheet.getSheets().find(candidate => candidate.getName().toLowerCase() === channel.toLowerCase());
     if (!sheet) throw new Error('Foglio non trovato: ' + channel);
     const data = sheet.getDataRange().getValues();
-    const headers = data[0].map(header => String(header).trim().toLowerCase());
+    const headers = (data[0] || []).map(header => String(header).trim().toLowerCase());
     const entries = Object.keys(valuesByHeader).map(header => {
       const column = headers.indexOf(header.toLowerCase());
       if (column === -1) throw new Error('Colonna mancante nel foglio ' + channel + ': ' + header);
       return { header: header, column: column + 1, value: valuesByHeader[header] };
     });
     const nameColumn = headers.indexOf('nominativo');
-    const emptyRow = data.findIndex((row, index) => index > 0 && String(row[nameColumn]).trim() === '');
-    const rowNumber = emptyRow === -1 ? data.length + 1 : emptyRow + 1;
+    const rowIndex = data.findIndex((row, index) => index > 0 &&
+      String(row[nameColumn] ?? '').trim() === (updating ? nominativo : ''));
+    if (updating && rowIndex === -1) throw new Error('Prenotazione non trovata.');
+    const rowNumber = rowIndex === -1 ? data.length + 1 : rowIndex + 1;
 
     entries.forEach(entry => {
       const cell = sheet.getRange(rowNumber, entry.column);
@@ -141,7 +247,7 @@ function savePrenotazione(e) {
 
     return ContentService.createTextOutput(JSON.stringify({
       status: 'success',
-      year: checkin.year,
+      year: Number(year),
       channel: channel,
       row: rowNumber
     })).setMimeType(ContentService.MimeType.TEXT);
