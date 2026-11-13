@@ -413,13 +413,12 @@ button.active {
 
 /* Stili per il calendario */
 .calendar-header {
+  border-bottom: 3px solid #dadada;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
   background-color: #fff;
   padding: 15px;
-  border-radius: 5px;
 }
 
 .calendar-header h2 {
@@ -561,7 +560,6 @@ button.active {
 .stats-card {
   background-color: #fff;
   padding: 20px;
-  border-radius: 5px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 

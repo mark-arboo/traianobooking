@@ -243,7 +243,6 @@ function renderGraphicView() {
     // Crea la visualizzazione con due card separate
     statsContainer.innerHTML = `
         <div class="stats-card">
-            <h3>Revenue per Canale</h3>
             <div class="revenue-item">
                 <img src="./img/booking.png" alt="Booking" class="channel-logo">
                 <div class="channel-info">
