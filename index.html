@@ -52,6 +52,27 @@
     </div>
 
     <div class="content">
+        <div id="loginView" class="view">
+          <div class="login-card">
+            <div class="login-brand">
+              <img src="./img/logo_192x192.png" alt="Logo Traiano Booking" class="login-logo" width="96" height="96">
+              <h1 class="login-title">Traiano Booking</h1>
+            </div>
+            <form id="loginForm" class="login-form" autocomplete="on">
+              <div class="booking-field">
+                <label for="loginUsername">Username</label>
+                <input id="loginUsername" name="username" type="text" autocomplete="username" required>
+              </div>
+              <div class="booking-field">
+                <label for="loginPassword">Password</label>
+                <input id="loginPassword" name="password" type="password" autocomplete="current-password" required>
+              </div>
+              <p id="loginStatus" class="login-status" role="alert"></p>
+              <button type="submit" class="booking-submit">Accedi</button>
+            </form>
+          </div>
+        </div>
+
         <div id="listView" class="view active">
           <div class="list-actions">
             <input type="text" class="search-input" placeholder="Cerca prenotazione" onkeyup="filterBookings(this)">

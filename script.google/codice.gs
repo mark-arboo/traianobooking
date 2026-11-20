@@ -1,10 +1,14 @@
 const SPREADSHEET_ID_2026 = '1eZ2t1dVZqAiZTflLigA9y8sHzbXSVdISgmlCt8MeOyk';
 const SPREADSHEET_ID_2027 = '1ZXO7JxQZ6u9uge8QSMYn8sNmzZ7zW7b-KXsJ_64WZe0';
+const SPREADSHEET_ID_UTENTI = '1dUkCiIWNuNRksmBd6IbVo616CzghI_pjOKMfqGI5KPA';
+const TOKEN_TTL = 15; // Tempo espresso in giorni
+
 const spreadsheetIds = { 2026: SPREADSHEET_ID_2026, 2027: SPREADSHEET_ID_2027 };
 
 function doGet(e) {
 
   const action = e && e.parameter ? e.parameter.action : null;
+  if (!isAuthorizedRequest(e)) return unauthorizedResponse();
 
   switch (action) {
     case 'leggi':
@@ -20,6 +24,7 @@ function doGet(e) {
 function doPost(e) {
 
   const action = getActionFromRequest(e);
+  if (action !== 'login' && !isAuthorizedRequest(e)) return unauthorizedResponse();
 
   switch (action) {
     case 'savePrenotazione':
@@ -28,12 +33,45 @@ function doPost(e) {
       return cancellaPrenotazione(e);
     case 'modificaPrenotazione':
       return modificaPrenotazione(e);
+    case 'login':
+      return login(e);  
     default:
       return ContentService.createTextOutput(JSON.stringify({
         status: "error",
         message: "Azione POST non supportata"
       })).setMimeType(ContentService.MimeType.JSON);
   }
+}
+
+function isAuthorizedRequest(e) {
+  const token = getTokenFromRequest(e);
+  return Boolean(token) && checkTokenTTL(token);
+}
+
+function unauthorizedResponse() {
+  return ContentService.createTextOutput(JSON.stringify({
+    status: 'error',
+    code: 401,
+    message: 'Token mancante o non valido.'
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function getTokenFromRequest(e) {
+  const queryToken = e && e.parameter ? e.parameter.token : null;
+  if (queryToken) {
+    return queryToken;
+  }
+
+  try {
+    if (e && e.postData && e.postData.contents) {
+      const body = JSON.parse(e.postData.contents);
+      return body && body.token ? body.token : null;
+    }
+  } catch (error) {
+    // Ignora body non JSON
+  }
+
+  return null;
 }
 
 function getActionFromRequest(e) {
@@ -52,6 +90,73 @@ function getActionFromRequest(e) {
   }
 
   return null;
+}
+
+
+function login(e) {
+  let lock;
+  try {
+    let request;
+    try {
+      request = JSON.parse(e.postData.contents);
+    } catch (error) {
+      request = e && e.parameter ? e.parameter : {};
+    }
+    const username = requiredBookingText(request.username, 'Username');
+    const password = requiredBookingText(request.password, 'Password');
+
+    lock = LockService.getScriptLock();
+    if (!lock.tryLock(30000)) throw new Error('Accesso occupato. Riprova tra poco.');
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID_UTENTI).getSheets()[0];
+    const data = sheet.getDataRange().getValues();
+    const rowIndex = data.findIndex((row, index) => index > 0 &&
+      String(row[0] ?? '').trim() === username && String(row[1] ?? '') === password);
+    if (rowIndex === -1) throw new Error('Utente non esistente o password errata.');
+
+    const now = new Date();
+    const token = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, username + now.getTime() + Utilities.getUuid())
+      .map(byte => ((byte & 0xff) + 0x100).toString(16).slice(1))
+      .join('');
+    const dateText = Utilities.formatDate(now, 'Europe/Rome', 'dd/MM/yyyy HH:mm:ss');
+    sheet.getRange(rowIndex + 1, 3).setValue(token);
+    sheet.getRange(rowIndex + 1, 4).setValue(dateText);
+    SpreadsheetApp.flush();
+
+    return ContentService.createTextOutput(JSON.stringify({
+      code: 200,
+      message: 'Login completato.',
+      token: token
+    })).setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({
+      code: 500,
+      message: error.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    if (lock && lock.hasLock()) lock.releaseLock();
+  }
+}
+
+function checkTokenTTL(token) {
+  const tokenText = String(token ?? '').trim();
+  if (!tokenText) return false;
+
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID_UTENTI).getSheets()[0];
+  const data = sheet.getDataRange().getValues();
+  const row = data.find((candidate, index) => index > 0 && String(candidate[2] ?? '').trim() === tokenText);
+  if (!row) return false;
+
+  const tokenDate = parseTokenDate(row[3]);
+  if (!tokenDate) return false;
+  return Date.now() - tokenDate.getTime() <= TOKEN_TTL * 24 * 60 * 60 * 1000;
+}
+
+function parseTokenDate(value) {
+  if (value instanceof Date) return isNaN(value.getTime()) ? null : value;
+  const parts = /^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})$/.exec(String(value ?? '').trim());
+  if (!parts) return null;
+  return new Date(Number(parts[3]), Number(parts[2]) - 1, Number(parts[1]),
+    Number(parts[4]), Number(parts[5]), Number(parts[6]));
 }
 
 function modificaPrenotazione(e) {

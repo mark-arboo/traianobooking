@@ -1,5 +1,5 @@
 ﻿// URL applicazione Script google
-const bookingScriptURL = 'https://script.google.com/macros/s/AKfycbxWiUDxm3PagtSANuWxTaVnZdXtDHMZHR5ioDIbSFi4ioI7iU9sFwzD_CtdNHCupvFh/exec';
+const bookingScriptURL = 'https://script.google.com/macros/s/AKfycby8lSZfrDAxj95nW7X6TTwrnENEjZ9upZPIr5Ehvw-aH477HCNnpkDvzurKRfjFihCK/exec';
 
 let arrayBooking = [];
 let selectedBookingYear = new Date().getFullYear();
@@ -88,7 +88,7 @@ function loadFromRemote(year) {
     document.getElementById('loadingIndicator').hidden = false;
     listView.setAttribute('aria-busy', 'true');
     console.log('loadFromRemote - Caricamento dati da URL');
-    const parameters = new URLSearchParams({ anno: String(bookingYear), action: 'leggi' });
+    const parameters = new URLSearchParams({ anno: String(bookingYear), action: 'leggi', token: localStorage.getItem('token') ?? '' });
     const requestURL = bookingScriptURL + (bookingScriptURL.includes('?') ? '&' : '?') + parameters.toString();
 
     return fetch(requestURL)
@@ -97,6 +97,10 @@ function loadFromRemote(year) {
             return response.json();
         })
         .then(result => {
+            if (result.code === 401) {
+                handleUnauthorized();
+                return;
+            }
             if (result.code !== 200) throw new Error(result.message || 'Caricamento prenotazioni non riuscito.');
             const bookings = typeof result.data === 'string' ? JSON.parse(result.data) : result.data;
             if (!Array.isArray(bookings)) throw new Error('Formato dati prenotazioni non valido.');
@@ -155,15 +159,86 @@ function onPageRefresh() {
 
 
 
+/**
+ * Gestisce una risposta 401 (token mancante o scaduto): rimuove il token e torna alla schermata di login
+ */
+function handleUnauthorized() {
+    localStorage.removeItem('token');
+    showLoginView(() => loadFromRemote(selectedBookingYear));
+}
+
 function initializeApp() {
     updateBookingYearSelection();
 
-    if (isFirstLoad()) {
-        onFirstLoad();
-    } else {
-        onPageRefresh();
+    const firstLoad = isFirstLoad();
+    const startApp = () => {
+        if (firstLoad) {
+            onFirstLoad();
+        } else {
+            onPageRefresh();
+        }
+    };
+
+    if (localStorage.getItem('token')) {
+        startApp();
+        return;
+    }
+    showLoginView(startApp);
+
+}
+
+/**
+ * Mostra la schermata di login e, dopo un accesso riuscito, esegue onLoginSuccess
+ * @param {Function} onLoginSuccess callback da eseguire dopo il login
+ */
+function showLoginView(onLoginSuccess) {
+    document.querySelector('.page-header').hidden = true;
+    document.querySelector('.tabbar').hidden = true;
+    document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+    document.getElementById('loginView').classList.add('active');
+
+    const form = document.getElementById('loginForm');
+    form.onsubmit = event => {
+        event.preventDefault();
+        submitLogin(form, onLoginSuccess);
+    };
+}
+
+async function submitLogin(form, onLoginSuccess) {
+    const status = document.getElementById('loginStatus');
+    const button = form.querySelector('button[type="submit"]');
+    const passwordInput = form.elements.namedItem('password');
+    const username = form.elements.namedItem('username').value.trim();
+    const password = passwordInput.value;
+
+    button.disabled = true;
+    status.textContent = 'Accesso in corso...';
+
+    try {
+        const response = await fetch(bookingScriptURL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'login', username: username, password: password })
+        });
+        if (!response.ok) throw new Error('Risposta HTTP ' + response.status);
+        const result = await response.json();
+        if (result.code !== 200) throw new Error(result.message || 'Credenziali non valide.');
+
+        localStorage.setItem('token', result.token);
+    } catch (error) {
+        status.textContent = 'Accesso non riuscito. ' + error.message;
+        passwordInput.value = '';
+        button.disabled = false;
+        return;
     }
 
+    status.textContent = '';
+    form.reset();
+    button.disabled = false;
+    document.getElementById('loginView').classList.remove('active');
+    document.querySelector('.page-header').hidden = false;
+    document.querySelector('.tabbar').hidden = false;
+    onLoginSuccess();
 }
 
 
@@ -598,12 +673,15 @@ async function submitBooking(event) {
         const response = await fetch(bookingScriptURL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action: form.dataset.action, ...bookingData })
+            body: JSON.stringify({ action: form.dataset.action, token: localStorage.getItem('token') ?? '', ...bookingData })
         });
         if (!response.ok) throw new Error('Risposta HTTP ' + response.status);
         const result = await response.json();
+        if (result.code === 401) {
+            handleUnauthorized();
+            return;
+        }
         if (result.status !== 'success') {
-            status.textContent = result.message || 'Salvataggio non riuscito.';
             return;
         }
 
@@ -974,6 +1052,7 @@ async function deleteBooking(booking, button) {
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({
                 action: 'cancellaPrenotazione',
+                token: localStorage.getItem('token') ?? '',
                 anno: year,
                 channel: booking.channel,
                 nominativo: booking.Nominativo
@@ -981,6 +1060,10 @@ async function deleteBooking(booking, button) {
         });
         if (!response.ok) throw new Error('Risposta HTTP ' + response.status);
         const result = await response.json();
+        if (result.code === 401) {
+            handleUnauthorized();
+            return;
+        }
         if (result.status !== 'success') throw new Error(result.message || 'Cancellazione non riuscita.');
 
         arrayBooking = arrayBooking.filter(item => item !== booking);
