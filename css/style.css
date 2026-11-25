@@ -1022,12 +1022,14 @@ button.active {
 }
 
 .yearly-expenses {
-  background: #fff;
-  color: #333;
+  margin-top: 16px;
+  background: linear-gradient(135deg, #bf5700 0%, #c62828 100%);
+  color: #fff;
   box-shadow: none;
 }
 
 .yearly-expenses .expense-amount {
+  color: #fff;
   font-size: 32px;
   white-space: normal;
   overflow-wrap: anywhere;
