@@ -1,9 +1,12 @@
 ﻿// URL applicazione Script google
-const bookingScriptURL = 'https://script.google.com/macros/s/AKfycby8lSZfrDAxj95nW7X6TTwrnENEjZ9upZPIr5Ehvw-aH477HCNnpkDvzurKRfjFihCK/exec';
+const bookingScriptURL = 'https://script.google.com/macros/s/AKfycbxYXd8ZWWFheDTivWNv9_hkTEjW2tGVzhfDxmQsow1KBbOQcCn0Aqr778FnDMNf02DNLw/exec';
 
 let arrayBooking = [];
 let selectedBookingYear = new Date().getFullYear();
 let pendingBookingYear = null;
+let expensesRequestId = 0;
+let graphicRequestId = 0;
+let expensesCacheVersion = 0;
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
 let cache = false;
@@ -81,7 +84,7 @@ function loadFromRemote(year) {
     }
 
     const bookingYear = Number(year);
-    const yearButtons = document.querySelectorAll('.booking-year-button');
+    const yearButtons = document.querySelectorAll('#bookingYearSelector .booking-year-button');
     yearButtons.forEach(button => { button.disabled = true; });
     const listView = document.getElementById('listView');
     document.getElementById('bookingItems').innerHTML = '';
@@ -137,7 +140,7 @@ function loadFromRemote(year) {
         .finally(() => {
             listView.setAttribute('aria-busy', 'false');
             document.getElementById('loadingIndicator').hidden = true;
-            document.querySelectorAll('.booking-year-button').forEach(button => { button.disabled = false; });
+            document.querySelectorAll('#bookingYearSelector .booking-year-button').forEach(button => { button.disabled = false; });
         });
 
 }
@@ -196,12 +199,26 @@ function showLoginView(onLoginSuccess) {
     document.querySelector('.tabbar').hidden = true;
     document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
     document.getElementById('loginView').classList.add('active');
+    toggleLoginPasswordVisibility(false);
 
     const form = document.getElementById('loginForm');
     form.onsubmit = event => {
         event.preventDefault();
         submitLogin(form, onLoginSuccess);
     };
+}
+
+function toggleLoginPasswordVisibility(visible = document.getElementById('loginPassword').type === 'password') {
+    const input = document.getElementById('loginPassword');
+    const button = document.getElementById('loginPasswordToggle');
+    input.type = visible ? 'text' : 'password';
+    const label = visible ? 'Nascondi password' : 'Mostra password';
+    button.setAttribute('aria-label', label);
+    button.setAttribute('aria-pressed', String(visible));
+    button.title = label;
+    const icon = button.querySelector('i');
+    icon.classList.toggle('fa-eye', !visible);
+    icon.classList.toggle('fa-eye-slash', visible);
 }
 
 async function submitLogin(form, onLoginSuccess) {
@@ -228,12 +245,14 @@ async function submitLogin(form, onLoginSuccess) {
     } catch (error) {
         status.textContent = 'Accesso non riuscito. ' + error.message;
         passwordInput.value = '';
+        toggleLoginPasswordVisibility(false);
         button.disabled = false;
         return;
     }
 
     status.textContent = '';
     form.reset();
+    toggleLoginPasswordVisibility(false);
     button.disabled = false;
     document.getElementById('loginView').classList.remove('active');
     document.querySelector('.page-header').hidden = false;
@@ -245,6 +264,7 @@ async function submitLogin(form, onLoginSuccess) {
 function showGraphicView() {
 
     sessionStorage.setItem('lastActivePanel', 'grafico');
+    currentYear = selectedBookingYear;
 
     // Rimuove la classe active da tutti i pulsanti
     document.getElementById('listViewBtn').classList.remove('active');
@@ -253,20 +273,27 @@ function showGraphicView() {
     document.getElementById('graphicViewBtn').classList.add('active');
 
     // Aggiorna il titolo
-    updateViewHeader(`Revenue ${selectedBookingYear}`, 'grafico');
+    updateViewHeader(`Profitto ${selectedBookingYear}`, 'grafico');
 
-    renderGraphicView();
+    const rendering = renderGraphicView();
   
     // Mostra la vista grafico e nasconde le altre viste
     document.getElementById('graphicView').classList.add('active');
     document.getElementById('listView').classList.remove('active');
     document.getElementById('calendarView').classList.remove('active');
 
+    return rendering;
 }
 
-function renderGraphicView() {
+async function renderGraphicView() {
+    const requestId = ++graphicRequestId;
+    const referenceYear = selectedBookingYear;
+    const year = currentYear;
+    const month = currentMonth;
     const graphicContainer = document.getElementById('graphicView');
     graphicContainer.innerHTML = ''; // Pulisce il contenitore
+    graphicContainer.setAttribute('aria-busy', 'true');
+    if (graphicContainer.classList.contains('active')) updateViewHeader(`Profitto ${selectedBookingYear}`, 'grafico');
     
     // Crea l'header con navigazione
     const header = document.createElement('div');
@@ -275,7 +302,7 @@ function renderGraphicView() {
                         'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
     header.innerHTML = `
         <button class="nav-button" onclick="previousMonthGraphic()">◀</button>
-        <h2>${monthNames[currentMonth]} ${currentYear}</h2>
+        <h2>${monthNames[month]} ${year}</h2>
         <button class="nav-button" onclick="nextMonthGraphic()">▶</button>
     `;
     graphicContainer.appendChild(header);
@@ -285,8 +312,8 @@ function renderGraphicView() {
     statsContainer.className = 'stats-container';
 
     // Filtra le prenotazioni per il mese corrente in base alla data di check-in
-    const monthStart = new Date(currentYear, currentMonth, 1);
-    const monthEnd = new Date(currentYear, currentMonth + 1, 0);
+    const monthStart = new Date(year, month, 1);
+    const monthEnd = new Date(year, month + 1, 0);
     monthEnd.setHours(23, 59, 59, 999);
 
     const bookingsInMonth = arrayBooking.filter(booking => {
@@ -314,7 +341,7 @@ function renderGraphicView() {
     const totalRevenue = revenueByChannel.booking + revenueByChannel.airbnb + revenueByChannel.black;
 
     // Calcola la revenue annuale
-    const yearlyRevenue = calculateYearlyRevenue(currentYear);
+    const yearlyRevenue = calculateYearlyRevenue(year);
 
     // Crea la visualizzazione con due card separate
     statsContainer.innerHTML = `
@@ -340,9 +367,16 @@ function renderGraphicView() {
                     <p class="channel-revenue">${formatEuro(revenueByChannel.black)} €</p>
                 </div>
             </div>
+            <div class="revenue-item profit-expenses">
+                <i class="fa fa-credit-card expense-icon" aria-hidden="true"></i>
+                <div class="channel-info">
+                    <p class="channel-name">Spese</p>
+                    <p class="expense-amount monthly-expenses-amount">Caricamento...</p>
+                </div>
+            </div>
             <div class="revenue-total">
                 <p class="total-label">Totale Mensile:</p>
-                <p class="total-revenue">${formatEuro(totalRevenue)} €</p>
+                <p class="total-revenue">Caricamento...</p>
             </div>
             <div class="booking-count">
                 <p>Numero prenotazioni: <strong>${bookingsInMonth.length}</strong></p>
@@ -353,14 +387,54 @@ function renderGraphicView() {
             <div class="yearly-revenue">
                 <i class="fa fa-line-chart" aria-hidden="true"></i>
                 <div class="yearly-info">
-                    <p class="yearly-label">Revenue Annuale ${currentYear}</p>
+                    <p class="yearly-label">Revenue Annuale ${year}</p>
                     <p class="yearly-amount">${formatEuro(yearlyRevenue)} €</p>
+                </div>
+            </div>
+            <div class="yearly-revenue yearly-expenses">
+                <i class="fa fa-credit-card" aria-hidden="true"></i>
+                <div class="yearly-info">
+                    <p class="yearly-label">Spese Annuali ${year}</p>
+                    <p class="yearly-amount expense-amount annual-expenses-amount">Caricamento...</p>
                 </div>
             </div>
         </div>
     `;
 
     graphicContainer.appendChild(statsContainer);
+    const status = document.createElement('p');
+    status.className = 'expenses-status expenses-error';
+    status.setAttribute('role', 'status');
+    status.hidden = true;
+    graphicContainer.appendChild(status);
+
+    try {
+        const expenses = await loadExpenses(referenceYear);
+        if (requestId !== graphicRequestId) return;
+        const monthlyTotal = expenses.reduce((sum, expense) => {
+            const date = parseItalianDate(expense.Data);
+            return date >= monthStart && date <= monthEnd ? sum + (expense.Importo || 0) : sum;
+        }, 0);
+        const annualTotal = expenses.reduce((sum, expense) =>
+            parseItalianDate(expense.Data).getFullYear() === year ? sum + (expense.Importo || 0) : sum, 0);
+        statsContainer.querySelector('.monthly-expenses-amount').textContent = formatEuro(monthlyTotal) + ' \u20ac';
+        statsContainer.querySelector('.annual-expenses-amount').textContent = formatEuro(annualTotal) + ' \u20ac';
+        statsContainer.querySelector('.total-revenue').textContent = formatEuro(totalRevenue - monthlyTotal) + ' \u20ac';
+    } catch (error) {
+        if (requestId !== graphicRequestId) return;
+        if (error.code === 401) {
+            localStorage.removeItem('token');
+            showLoginView(() => showGraphicView());
+            return;
+        }
+        statsContainer.querySelectorAll('.monthly-expenses-amount, .annual-expenses-amount, .total-revenue')
+            .forEach(amount => { amount.textContent = 'Non disponibile'; });
+        status.textContent = 'Caricamento spese non riuscito. ' + error.message;
+        status.hidden = false;
+        console.error('Errore durante il caricamento delle spese per il profitto:', error);
+    } finally {
+        if (requestId === graphicRequestId) graphicContainer.setAttribute('aria-busy', 'false');
+    }
 }
 
 function previousMonthGraphic() {
@@ -369,7 +443,7 @@ function previousMonthGraphic() {
         currentMonth = 11;
         currentYear--;
     }
-    renderGraphicView();
+    return renderGraphicView();
 }
 
 function nextMonthGraphic() {
@@ -378,7 +452,7 @@ function nextMonthGraphic() {
         currentMonth = 0;
         currentYear++;
     }
-    renderGraphicView();
+    return renderGraphicView();
 }
 
 function calculateYearlyRevenue(year) {
@@ -409,13 +483,18 @@ function calculateYearlyRevenue(year) {
 function updateViewHeader(title, panel) {
     document.querySelector('h1').textContent = title;
     updateBookingYearSelection();
+    document.getElementById('expensesView').classList.toggle('active', panel === 'spese');
+    document.getElementById('expensesViewBtn').classList.toggle('active', panel === 'spese' || panel === 'inserisciSpesa');
     document.getElementById('insertBookingBtn').hidden = panel !== 'lista';
+    document.getElementById('insertExpenseBtn').hidden = panel !== 'spese';
     document.getElementById('backToListBtn').hidden = panel !== 'inserisci';
+    document.getElementById('backToExpensesBtn').hidden = panel !== 'inserisciSpesa';
     document.getElementById('insertBookingView').classList.toggle('active', panel === 'inserisci');
+    document.getElementById('insertExpenseView').classList.toggle('active', panel === 'inserisciSpesa');
 }
 
 function updateBookingYearSelection() {
-    document.querySelectorAll('.booking-year-button').forEach(button => {
+    document.querySelectorAll('#bookingYearSelector .booking-year-button').forEach(button => {
         const isSelected = button.dataset.year === String(pendingBookingYear ?? selectedBookingYear);
         button.classList.toggle('active', isSelected);
         button.setAttribute('aria-pressed', String(isSelected));
@@ -586,7 +665,11 @@ function updateBookingFieldError(field) {
         'Numero Ospiti': 'Inserisci il numero ospiti, anche come testo: ad esempio 2 adulti e 1 bambino.',
         'Ospiti soggetti a tassa di soggiorno': 'Inserisci un numero intero maggiore o uguale a 0.',
         'Guadagno Lordo': 'Inserisci un importo maggiore o uguale a 0 con massimo due decimali, ad esempio 250,75.',
-        'Costi di pulizia': 'Inserisci un importo maggiore o uguale a 0 con massimo due decimali, ad esempio 250,75.'
+        'Costi di pulizia': 'Inserisci un importo maggiore o uguale a 0 con massimo due decimali, ad esempio 250,75.',
+        data: 'Inserisci una data valida in formato gg/mm/aaaa.',
+        categoria: 'Inserisci la categoria.',
+        descrizione: 'Inserisci la descrizione.',
+        importo: 'Inserisci un importo maggiore o uguale a 0 con massimo due decimali, ad esempio 250,75.'
     };
 
     const message = field.validity.valueMissing
@@ -735,6 +818,267 @@ function collectBookingData(event) {
     return bookingData;
 }
 
+function showInsertExpense() {
+    sessionStorage.setItem('lastActivePanel', 'inserisciSpesa');
+    document.querySelectorAll('.view, .tabButton').forEach(element => element.classList.remove('active'));
+    updateViewHeader(`Nuova Spesa ${selectedBookingYear}`, 'inserisciSpesa');
+
+    const container = document.getElementById('insertExpenseView');
+    container.innerHTML = `
+        <form id="expenseForm" class="booking-form">
+            <div class="booking-field">
+                <label for="expenseDate">Data (gg/mm/aaaa)</label>
+                <input id="expenseDate" name="data" type="text" inputmode="numeric" placeholder="gg/mm/aaaa" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" maxlength="10" required>
+            </div>
+            <div class="booking-field">
+                <label for="expenseCategory">Categoria</label>
+                <select id="expenseCategory" name="categoria" required>
+                    <option value="">Seleziona una categoria</option>
+                    <option>Pulizia e lavanderia</option>
+                    <option>Utenze e consumi</option>
+                    <option>Manutenzione e riparazioni</option>
+                    <option>Materiale di consumo e cortesia</option>
+                    <option>Arredamento e dotazioni</option>
+                    <option>Assicurazione e sicurezza</option>
+                    <option>Lavori e investimenti</option>
+                    <option>Spese straordinarie e varie</option>
+                </select>
+            </div>
+            <div class="booking-field booking-field-wide">
+                <label for="expenseDescription">Descrizione</label>
+                <input id="expenseDescription" name="descrizione" type="text" required>
+            </div>
+            <div class="booking-field booking-field-wide">
+                <label for="expenseAmount">Importo (euro)</label>
+                <input id="expenseAmount" name="importo" type="text" inputmode="decimal" placeholder="0,00" pattern="[0-9]+([.,][0-9]{1,2})?" required>
+            </div>
+            <div class="booking-field booking-field-wide">
+                <label for="expenseNotes">Note</label>
+                <textarea id="expenseNotes" name="note" rows="4"></textarea>
+            </div>
+            <button type="submit" class="booking-submit booking-field-wide">Inserisci spesa</button>
+            <p id="expenseSaveStatus" class="booking-field-wide" role="status" hidden></p>
+        </form>
+    `;
+    const form = document.getElementById('expenseForm');
+    form.dataset.year = String(selectedBookingYear);
+    const today = new Date();
+    form.elements.namedItem('data').value =
+        `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+    form.addEventListener('submit', submitExpense);
+    form.addEventListener('focusout', event => {
+        if (!event.target.matches('input, select, textarea')) return;
+        event.target.dataset.touched = 'true';
+        validateExpenseForm(form);
+        if (!event.target.validity.valid) event.target.reportValidity();
+    });
+    form.addEventListener('input', event => {
+        if (!event.target.matches('input, select, textarea')) return;
+        if (event.target.name === 'data') formatBookingDateInput(event.target);
+        event.target.setCustomValidity('');
+        event.target.removeAttribute('aria-invalid');
+    });
+    form.addEventListener('invalid', event => {
+        event.target.dataset.touched = 'true';
+        updateBookingFieldError(event.target);
+    }, true);
+}
+
+function validateExpenseForm(form) {
+    form.querySelectorAll('input, select, textarea').forEach(field => field.setCustomValidity(''));
+    const dateField = form.elements.namedItem('data');
+    const date = parseItalianDate(dateField.value);
+    const formattedDate = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+    dateField.setCustomValidity(
+        /^[0-9]{2}\/[0-9]{2}\/[0-9]{4}$/.test(dateField.value) && formattedDate === dateField.value
+            ? '' : 'Inserisci una data valida in formato gg/mm/aaaa.'
+    );
+    const amountField = form.elements.namedItem('importo');
+    const amount = amountField.value.trim();
+    amountField.setCustomValidity(
+        /^\d+([.,]\d{1,2})?$/.test(amount) && Number.isFinite(Number(amount.replace(',', '.')))
+            ? '' : 'Inserisci un importo maggiore o uguale a 0 con massimo due decimali.'
+    );
+    form.querySelectorAll('input, select, textarea').forEach(field => {
+        if (field.required && !field.value.trim()) field.setCustomValidity('Campo obbligatorio: inserisci un valore.');
+        if (field.dataset.touched === 'true') updateBookingFieldError(field);
+    });
+}
+
+async function submitExpense(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    if (form.dataset.saving === 'true') return;
+    validateExpenseForm(form);
+    if (!form.reportValidity()) return;
+
+    const data = new FormData(form);
+    const year = Number(form.dataset.year);
+    const expenseData = {
+        action: 'saveSpesa',
+        token: localStorage.getItem('token') ?? '',
+        anno: year,
+        data: data.get('data'),
+        categoria: data.get('categoria').trim(),
+        descrizione: data.get('descrizione').trim(),
+        importo: data.get('importo').trim(),
+        note: data.get('note').trim()
+    };
+    const status = form.querySelector('#expenseSaveStatus');
+    const controls = Array.from(form.querySelectorAll('input, select, textarea, button'));
+    const button = form.querySelector('button[type="submit"]');
+    form.dataset.saving = 'true';
+    controls.forEach(control => { control.disabled = true; });
+    button.textContent = 'Salvataggio...';
+    status.hidden = false;
+    status.textContent = 'Salvataggio in corso...';
+
+    try {
+        if (!bookingScriptURL) throw new Error('URL della Web App Google Apps Script non configurato.');
+        const response = await fetch(bookingScriptURL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(expenseData)
+        });
+        if (!response.ok) throw new Error('Risposta HTTP ' + response.status);
+        const result = await response.json();
+        if (result.code === 401) {
+            localStorage.removeItem('token');
+            status.textContent = 'Sessione scaduta. Accedi nuovamente e salva la spesa.';
+            showLoginView(() => {
+                document.querySelectorAll('.view, .tabButton').forEach(element => element.classList.remove('active'));
+                updateViewHeader(`Nuova Spesa ${year}`, 'inserisciSpesa');
+            });
+            return;
+        }
+        if (result.status !== 'success') throw new Error(result.message || 'Salvataggio spesa non riuscito.');
+        if (result.year !== year) throw new Error('Anno nella risposta di salvataggio non valido.');
+
+        expensesRequestId++;
+        graphicRequestId++;
+        expensesCacheVersion++;
+        sessionStorage.removeItem('arrayExpenses_' + year);
+        status.textContent = 'Spesa salvata.';
+        form.reset();
+        if (document.getElementById('expensesView').classList.contains('active') ||
+            (document.getElementById('insertExpenseView').classList.contains('active') &&
+                document.getElementById('expenseForm') === form)) {
+            await showListExpenses();
+        } else if (document.getElementById('graphicView').classList.contains('active')) {
+            await renderGraphicView();
+        }
+    } catch (error) {
+        status.textContent = 'Salvataggio non confermato. Verifica il foglio prima di riprovare. ' + error.message;
+    } finally {
+        controls.forEach(control => { control.disabled = false; });
+        button.textContent = 'Inserisci spesa';
+        form.dataset.saving = 'false';
+    }
+}
+
+async function loadExpenses(year) {
+    const cacheKey = 'arrayExpenses_' + year;
+    const cacheVersion = expensesCacheVersion;
+    const cachedExpenses = sessionStorage.getItem(cacheKey);
+    let expenses;
+    if (cachedExpenses !== null) {
+        expenses = JSON.parse(cachedExpenses);
+    } else {
+        if (!bookingScriptURL) throw new Error('URL della Web App Google Apps Script non configurato.');
+        const parameters = new URLSearchParams({
+            anno: String(year),
+            action: 'leggiSpese',
+            token: localStorage.getItem('token') ?? ''
+        });
+        const response = await fetch(bookingScriptURL + (bookingScriptURL.includes('?') ? '&' : '?') + parameters.toString());
+        if (!response.ok) throw new Error('Caricamento non riuscito (HTTP ' + response.status + ')');
+        const result = await response.json();
+        if (result.code !== 200) {
+            const error = new Error(result.message || 'Caricamento spese non riuscito.');
+            error.code = result.code;
+            throw error;
+        }
+        expenses = typeof result.data === 'string' ? JSON.parse(result.data) : result.data;
+    }
+    if (!Array.isArray(expenses) || expenses.some(expense =>
+        !expense || typeof expense !== 'object' || Array.isArray(expense) ||
+        (expense.Importo !== '' && expense.Importo != null &&
+            (typeof expense.Importo !== 'number' || !Number.isFinite(expense.Importo))))) {
+        throw new Error('Formato dati spese non valido.');
+    }
+    expenses.sort((a, b) => parseItalianDate(b.Data) - parseItalianDate(a.Data));
+    if (cachedExpenses === null && cacheVersion === expensesCacheVersion) {
+        sessionStorage.setItem(cacheKey, JSON.stringify(expenses));
+    }
+    return expenses;
+}
+
+async function showListExpenses() {
+    const year = selectedBookingYear;
+    const requestId = ++expensesRequestId;
+    sessionStorage.setItem('lastActivePanel', 'spese');
+    document.querySelectorAll('.view, .tabButton').forEach(element => element.classList.remove('active'));
+    updateViewHeader(`Spese ${year}`, 'spese');
+
+    const view = document.getElementById('expensesView');
+    const items = document.getElementById('expenseItems');
+    const loading = document.getElementById('expensesLoadingIndicator');
+    const status = document.getElementById('expensesStatus');
+    items.replaceChildren();
+    status.hidden = true;
+    status.textContent = '';
+    status.classList.remove('expenses-error');
+    loading.hidden = true;
+    view.setAttribute('aria-busy', 'false');
+
+    try {
+        loading.hidden = sessionStorage.getItem('arrayExpenses_' + year) !== null;
+        view.setAttribute('aria-busy', String(!loading.hidden));
+        const expenses = await loadExpenses(year);
+        if (requestId !== expensesRequestId) return;
+        expenses.forEach(expense => {
+            const card = document.createElement('article');
+            card.className = 'expense-item';
+            card.innerHTML = `
+                <div class="expense-heading">
+                    <strong class="expense-category"></strong>
+                    <span class="expense-amount"></span>
+                </div>
+                <p class="expense-date"><i class="fa fa-calendar-o" aria-hidden="true"></i> <span></span></p>
+                <p class="expense-description"><i class="fa fa-file-text-o" aria-hidden="true"></i> <span></span></p>
+                <p class="expense-note"><i class="fa fa-sticky-note-o" aria-hidden="true"></i> <span></span></p>
+            `;
+            card.querySelector('.expense-category').textContent = expense.Categoria || 'Senza categoria';
+            card.querySelector('.expense-amount').textContent = expense.Importo === '' || expense.Importo == null
+                ? '-' : formatEuro(expense.Importo) + ' \u20ac';
+            card.querySelector('.expense-date span').textContent = expense.Data || '-';
+            card.querySelector('.expense-description span').textContent = expense.Descrizione || '-';
+            card.querySelector('.expense-note span').textContent = expense.Note || '-';
+            items.appendChild(card);
+        });
+        if (!expenses.length) {
+            status.textContent = 'Nessuna spesa per il ' + year + '.';
+            status.hidden = false;
+        }
+    } catch (error) {
+        if (requestId !== expensesRequestId) return;
+        if (error.code === 401) {
+            localStorage.removeItem('token');
+            showLoginView(() => showListExpenses());
+            return;
+        }
+        items.replaceChildren();
+        status.textContent = 'Caricamento spese non riuscito. ' + error.message;
+        status.classList.add('expenses-error');
+        status.hidden = false;
+        console.error('Errore durante il caricamento delle spese:', error);
+    } finally {
+        if (requestId === expensesRequestId) {
+            loading.hidden = true;
+            view.setAttribute('aria-busy', 'false');
+        }
+    }
+}
 
 function showListView() {
 
@@ -747,7 +1091,7 @@ function showListView() {
     document.getElementById('listViewBtn').classList.add('active');
 
     // Aggiorna il titolo
-    updateViewHeader('Prenotazioni', 'lista');
+    updateViewHeader(`Prenotazioni ${selectedBookingYear}`, 'lista');
  
     // svuota la visualizzazione precedente
     const bookingItems = document.getElementById('bookingItems');

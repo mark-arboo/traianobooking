@@ -114,22 +114,26 @@ h1 {
   background-color: #fff;
 }
 
-#insertBookingBtn {
+#insertBookingBtn,
+#insertExpenseBtn {
   margin-left: auto;
   background-color: #007bff;
   color: #fff;
 }
 
-#insertBookingBtn:hover {
+#insertBookingBtn:hover,
+#insertExpenseBtn:hover {
   background-color: #0056b3;
 }
 
-#backToListBtn {
+#backToListBtn,
+#backToExpensesBtn {
   background-color: #007bff;
   color: #fff;
 }
 
-#backToListBtn:hover {
+#backToListBtn:hover,
+#backToExpensesBtn:hover {
   background-color: #0056b3;
 }
 
@@ -164,7 +168,8 @@ h1 {
   line-height: 1.4;
 }
 
-.booking-field:has(> :required:not(:disabled)) > label::after {
+.booking-field:has(> :required:not(:disabled)) > label::after,
+.booking-field:has(> .login-password-control > :required:not(:disabled)) > label::after {
   content: ' *';
 }
 
@@ -246,6 +251,42 @@ h1 {
 .login-logo {
   width: 96px;
   height: 96px;
+}
+
+.login-password-control {
+  position: relative;
+}
+
+.login-password-control input {
+  padding-right: 48px;
+}
+
+.login-password-toggle {
+  visibility: hidden;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 44px;
+  border: none;
+  border-radius: 0 5px 5px 0;
+  background: transparent;
+  color: #666;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.login-password-control:focus-within .login-password-toggle {
+  visibility: visible;
+}
+
+.login-password-toggle:hover {
+  color: #007bff;
+}
+
+.login-password-toggle:focus-visible {
+  outline: 2px solid #007bff;
+  outline-offset: -3px;
 }
 
 .login-title {
@@ -512,6 +553,23 @@ button.active {
   margin-bottom: 0;
 }
 
+.search-field {
+  position: relative;
+}
+
+.search-field .fa-search {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+  pointer-events: none;
+}
+
+.search-field .search-input {
+  padding-left: 38px;
+}
+
 @media (max-width: 640px) {
   .list-actions {
     flex-direction: column;
@@ -522,7 +580,8 @@ button.active {
 
 
 
-.booking-item {
+.booking-item,
+.expense-item {
   position: relative;
   background-color: #fff;
   padding: 5px;
@@ -532,6 +591,60 @@ button.active {
   font-size: 16px; 
   width: 100%; 
   box-sizing: border-box;
+}
+
+.expense-item {
+  padding: 14px;
+  overflow-wrap: anywhere;
+}
+
+.expense-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px 16px;
+  margin-bottom: 10px;
+}
+
+.expense-amount {
+  color: #c62828;
+  font-size: 20px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.expense-date,
+.expense-note {
+  color: #666;
+  font-size: 14px;
+}
+
+.expense-description,
+.expense-note {
+  white-space: pre-wrap;
+}
+
+.expense-note {
+  margin-bottom: 0;
+}
+
+.expenses-status {
+  padding: 14px;
+  line-height: 1.5;
+}
+
+.expenses-error {
+  color: #c62828;
+}
+
+#expensesLoadingIndicator {
+  display: block;
+  margin: 16px auto;
+}
+
+#expensesLoadingIndicator[hidden] {
+  display: none;
 }
 
 
@@ -811,6 +924,28 @@ button.active {
   object-fit: contain;
 }
 
+.profit-expenses {
+  border-left-color: #c62828;
+}
+
+.profit-expenses .expense-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 50px;
+  height: 50px;
+  margin-right: 15px;
+  font-size: 32px;
+}
+
+.profit-expenses .channel-info {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.profit-expenses .expense-amount {
+  margin: 0;
+}
+
 .channel-info {
   flex: 1;
   display: flex;
@@ -840,6 +975,8 @@ button.active {
   margin-top: 25px;
   margin-bottom: 15px;
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   justify-content: space-between;
   align-items: center;
 }
@@ -882,6 +1019,23 @@ button.active {
   font-size: 40px;
   margin-right: 20px;
   opacity: 0.9;
+}
+
+.yearly-expenses {
+  background: #fff;
+  color: #333;
+  box-shadow: none;
+}
+
+.yearly-expenses .expense-amount {
+  font-size: 32px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-shadow: none;
+}
+
+.yearly-expenses .yearly-info {
+  min-width: 0;
 }
 
 .yearly-info {

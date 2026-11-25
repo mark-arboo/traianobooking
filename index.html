@@ -29,8 +29,14 @@
         <button id="backToListBtn" type="button" class="header-button" onclick="showListView()" aria-label="Torna alle prenotazioni" title="Torna alle prenotazioni" hidden>
           <i class="fa fa-arrow-left" aria-hidden="true"></i>
         </button>
+        <button id="backToExpensesBtn" type="button" class="header-button" onclick="showListExpenses()" aria-label="Torna alle spese" title="Torna alle spese" hidden>
+          <i class="fa fa-arrow-left" aria-hidden="true"></i>
+        </button>
         <h1>Prenotazioni</h1>
         <button id="insertBookingBtn" type="button" class="header-button" onclick="showInsertBooking()" aria-label="Nuova prenotazione" title="Nuova prenotazione">
+          <i class="fa fa-plus" aria-hidden="true"></i>
+        </button>
+        <button id="insertExpenseBtn" type="button" class="header-button" onclick="showInsertExpense()" aria-label="Nuova spesa" title="Nuova spesa" hidden>
           <i class="fa fa-plus" aria-hidden="true"></i>
         </button>
       </div>
@@ -39,16 +45,21 @@
     <div class="tabbar">
          <button id="listViewBtn" class="tabButton active" onclick="showListView()">
             <i class="fa fa-list" aria-hidden="true"></i>
-            <span>Bookings</span>
+            <span>Elenco</span>
          </button>
          <button id="calendarViewBtn" class="tabButton" onclick="showCalendarView()">
             <i class="fa fa-calendar" aria-hidden="true"></i>
-            <span>Calendar</span>
+            <span>Calendario</span>
+         </button>
+         <button id="expensesViewBtn" class="tabButton" onclick="showListExpenses()">
+            <i class="fa fa-credit-card" aria-hidden="true"></i>
+            <span>Spese</span>
          </button>
          <button id="graphicViewBtn" class="tabButton" onclick="showGraphicView()">
             <i class="fa fa fa-university" aria-hidden="true"></i>
-            <span>Revenue</span>
+            <span>Profitto</span>
          </button>
+
     </div>
 
     <div class="content">
@@ -65,7 +76,12 @@
               </div>
               <div class="booking-field">
                 <label for="loginPassword">Password</label>
-                <input id="loginPassword" name="password" type="password" autocomplete="current-password" required>
+                <div class="login-password-control">
+                  <input id="loginPassword" name="password" type="password" autocomplete="current-password" required>
+                  <button id="loginPasswordToggle" type="button" class="login-password-toggle" onclick="toggleLoginPasswordVisibility()" aria-label="Mostra password" aria-controls="loginPassword" aria-pressed="false" title="Mostra password">
+                    <i class="fa fa-eye" aria-hidden="true"></i>
+                  </button>
+                </div>
               </div>
               <p id="loginStatus" class="login-status" role="alert"></p>
               <button type="submit" class="booking-submit">Accedi</button>
@@ -75,14 +91,23 @@
 
         <div id="listView" class="view active">
           <div class="list-actions">
-            <input type="text" class="search-input" placeholder="Cerca prenotazione" onkeyup="filterBookings(this)">
+            <div class="search-field">
+              <i class="fa fa-search" aria-hidden="true"></i>
+              <input type="text" class="search-input" placeholder="Cerca prenotazione" aria-label="Cerca prenotazione" onkeyup="filterBookings(this)">
+            </div>
             <div id="bookingYearSelector" class="booking-year-selector" role="group" aria-label="Anno prenotazioni">
               <button type="button" class="booking-year-button" data-year="2027" aria-pressed="false" onclick="changeBookingYear('2027')">2027</button>
               <button type="button" class="booking-year-button" data-year="2026" aria-pressed="false" onclick="changeBookingYear('2026')">2026</button>
             </div>
           </div>
-          <img src="./img/loading.gif" alt="Caricamento..." id="loadingIndicator" width="50" height="50">
+          <img src="./img/loading.gif" alt="Caricamento..." id="loadingIndicator" width="50" height="50" hidden>
           <div id="bookingItems"></div>
+        </div>
+
+        <div id="expensesView" class="view" aria-busy="false">
+          <img src="./img/loading.gif" alt="Caricamento spese..." id="expensesLoadingIndicator" width="50" height="50" hidden>
+          <p id="expensesStatus" class="expenses-status" role="status" aria-live="polite" hidden></p>
+          <div id="expenseItems"></div>
         </div>
 
         <div id="calendarView" class="view">
@@ -95,6 +120,7 @@
         </div>       
 
         <div id="insertBookingView" class="view"></div>
+        <div id="insertExpenseView" class="view"></div>
 
     </div>
 

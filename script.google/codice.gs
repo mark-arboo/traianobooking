@@ -13,6 +13,8 @@ function doGet(e) {
   switch (action) {
     case 'leggi':
       return leggiPrenotazione(e);
+    case 'leggiSpese':
+      return leggiSpese(e);
     default:
       return ContentService.createTextOutput(JSON.stringify({
         status: "error",
@@ -34,7 +36,10 @@ function doPost(e) {
     case 'modificaPrenotazione':
       return modificaPrenotazione(e);
     case 'login':
-      return login(e);  
+      return login(e); 
+    case 'saveSpesa':
+      return saveSpesa(e);
+
     default:
       return ContentService.createTextOutput(JSON.stringify({
         status: "error",
@@ -90,6 +95,93 @@ function getActionFromRequest(e) {
   }
 
   return null;
+}
+
+
+function saveSpesa(e) {
+  let lock;
+  try {
+    const request = JSON.parse(e.postData.contents);
+    const year = requiredBookingText(request.anno, 'Anno');
+    if (!Object.prototype.hasOwnProperty.call(spreadsheetIds, year)) throw new Error('Anno non supportato.');
+    const date = parseBookingDate(request.data);
+    const valuesByHeader = {
+      Data: date.serial,
+      Categoria: bookingSheetText(requiredBookingText(request.categoria, 'Categoria')),
+      Descrizione: bookingSheetText(requiredBookingText(request.descrizione, 'Descrizione')),
+      Importo: parseBookingAmount(request.importo),
+      Note: bookingSheetText(String(request.note || '').trim())
+    };
+
+    lock = LockService.getScriptLock();
+    if (!lock.tryLock(30000)) throw new Error('Salvataggio occupato. Riprova tra poco.');
+    const spreadsheet = SpreadsheetApp.openById(spreadsheetIds[year]);
+    const sheet = spreadsheet.getSheetByName('Expenses');
+    if (!sheet) throw new Error('Foglio non trovato: Expenses');
+    const data = sheet.getDataRange().getValues();
+    const headers = (data[0] || []).map(header => String(header).trim().toLowerCase());
+    const entries = Object.keys(valuesByHeader).map(header => {
+      const column = headers.indexOf(header.toLowerCase());
+      if (column === -1) throw new Error('Colonna mancante nel foglio Expenses: ' + header);
+      return { header: header, column: column + 1, value: valuesByHeader[header] };
+    });
+    const rowNumber = data.length + 1;
+    entries.forEach(entry => {
+      const cell = sheet.getRange(rowNumber, entry.column);
+      cell.setValue(entry.value);
+      if (entry.header === 'Data') cell.setNumberFormat('dd/MM/yyyy');
+      if (entry.header === 'Importo') cell.setNumberFormat('#,##0.00 "\u20ac"');
+    });
+    SpreadsheetApp.flush();
+
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'success',
+      year: Number(year),
+      row: rowNumber
+    })).setMimeType(ContentService.MimeType.TEXT);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'error',
+      message: error.toString()
+    })).setMimeType(ContentService.MimeType.TEXT);
+  } finally {
+    if (lock && lock.hasLock()) lock.releaseLock();
+  }
+}
+
+function leggiSpese(e) {
+  const year = String(e && e.parameter && e.parameter.anno || '').trim();
+  let result;
+  if (!Object.prototype.hasOwnProperty.call(spreadsheetIds, year)) {
+    result = { code: 400, message: 'Parametro anno mancante o non supportato.', data: [] };
+  } else {
+    try {
+      const spreadsheet = SpreadsheetApp.openById(spreadsheetIds[year]);
+      const sheet = spreadsheet.getSheetByName('Expenses');
+      if (!sheet) throw new Error('Foglio non trovato: Expenses');
+      const rows = sheet.getDataRange().getValues();
+      const headers = ['Data', 'Categoria', 'Descrizione', 'Importo', 'Note'];
+      const data = [];
+
+      rows.slice(1).forEach(row => {
+        if (!row.slice(0, headers.length).some(value => value !== '' && value !== null && value !== undefined)) return;
+        const entry = {};
+        headers.forEach((header, column) => {
+          const value = row[column];
+          entry[header] = header === 'Data' && value instanceof Date
+            ? Utilities.formatDate(value, 'Europe/Rome', 'dd/MM/yyyy') : value;
+        });
+        data.push(entry);
+      });
+
+      result = { code: 200, message: 'Lettura completata.', data: data };
+    } catch (error) {
+      result = { code: 500, message: error.toString(), data: [] };
+    }
+  }
+
+  return ContentService.createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 
