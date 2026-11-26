@@ -363,7 +363,7 @@ async function renderGraphicView() {
             <div class="revenue-item">
                 <img src="./img/black.png" alt="Black" class="channel-logo">
                 <div class="channel-info">
-                    <p class="channel-name">Altro</p>
+                    <p class="channel-name">Diretto</p>
                     <p class="channel-revenue">${formatEuro(revenueByChannel.black)} €</p>
                 </div>
             </div>

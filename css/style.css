@@ -889,7 +889,7 @@ button.active {
 }
 
 .stats-card {
-  background-color: #fff;
+  background-color: var(--color-tabbar-background);
   padding: 20px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
@@ -942,10 +942,6 @@ button.active {
   gap: 8px;
 }
 
-.profit-expenses .expense-amount {
-  margin: 0;
-}
-
 .channel-info {
   flex: 1;
   display: flex;
@@ -960,11 +956,15 @@ button.active {
   margin: 0;
 }
 
-.channel-revenue {
+.channel-revenue,
+.profit-expenses .expense-amount {
   font-size: 22px;
   font-weight: bold;
-  color: #27ae60;
   margin: 0;
+}
+
+.channel-revenue {
+  color: #27ae60;
 }
 
 .revenue-total {
