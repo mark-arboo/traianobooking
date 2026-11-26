@@ -1,9 +1,9 @@
-const SPREADSHEET_ID_2026 = '1eZ2t1dVZqAiZTflLigA9y8sHzbXSVdISgmlCt8MeOyk';
-const SPREADSHEET_ID_2027 = '1ZXO7JxQZ6u9uge8QSMYn8sNmzZ7zW7b-KXsJ_64WZe0';
+const SPREADSHEET_ID_BOOKINGS = '1ZXO7JxQZ6u9uge8QSMYn8sNmzZ7zW7b-KXsJ_64WZe0';
+const BOOKINGS_SHEET_NAME = 'Bookings';
+const EXPENSES_SHEET_NAME = 'Expenses';
+const ALL_YEARS = 'tutti';
 const SPREADSHEET_ID_UTENTI = '1dUkCiIWNuNRksmBd6IbVo616CzghI_pjOKMfqGI5KPA';
 const TOKEN_TTL = 15; // Tempo espresso in giorni
-
-const spreadsheetIds = { 2026: SPREADSHEET_ID_2026, 2027: SPREADSHEET_ID_2027 };
 
 function doGet(e) {
 
@@ -102,8 +102,6 @@ function saveSpesa(e) {
   let lock;
   try {
     const request = JSON.parse(e.postData.contents);
-    const year = requiredBookingText(request.anno, 'Anno');
-    if (!Object.prototype.hasOwnProperty.call(spreadsheetIds, year)) throw new Error('Anno non supportato.');
     const date = parseBookingDate(request.data);
     const valuesByHeader = {
       Data: date.serial,
@@ -115,9 +113,9 @@ function saveSpesa(e) {
 
     lock = LockService.getScriptLock();
     if (!lock.tryLock(30000)) throw new Error('Salvataggio occupato. Riprova tra poco.');
-    const spreadsheet = SpreadsheetApp.openById(spreadsheetIds[year]);
-    const sheet = spreadsheet.getSheetByName('Expenses');
-    if (!sheet) throw new Error('Foglio non trovato: Expenses');
+    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID_BOOKINGS);
+    const sheet = spreadsheet.getSheetByName(EXPENSES_SHEET_NAME);
+    if (!sheet) throw new Error('Foglio non trovato: ' + EXPENSES_SHEET_NAME);
     const data = sheet.getDataRange().getValues();
     const headers = (data[0] || []).map(header => String(header).trim().toLowerCase());
     const entries = Object.keys(valuesByHeader).map(header => {
@@ -136,7 +134,7 @@ function saveSpesa(e) {
 
     return ContentService.createTextOutput(JSON.stringify({
       status: 'success',
-      year: Number(year),
+      year: date.year,
       row: rowNumber
     })).setMimeType(ContentService.MimeType.TEXT);
   } catch (error) {
@@ -150,34 +148,31 @@ function saveSpesa(e) {
 }
 
 function leggiSpese(e) {
-  const year = String(e && e.parameter && e.parameter.anno || '').trim();
   let result;
-  if (!Object.prototype.hasOwnProperty.call(spreadsheetIds, year)) {
-    result = { code: 400, message: 'Parametro anno mancante o non supportato.', data: [] };
-  } else {
-    try {
-      const spreadsheet = SpreadsheetApp.openById(spreadsheetIds[year]);
-      const sheet = spreadsheet.getSheetByName('Expenses');
-      if (!sheet) throw new Error('Foglio non trovato: Expenses');
-      const rows = sheet.getDataRange().getValues();
-      const headers = ['Data', 'Categoria', 'Descrizione', 'Importo', 'Note'];
-      const data = [];
+  try {
+    const year = parseYearFilter(e && e.parameter && e.parameter.anno);
+    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID_BOOKINGS);
+    const sheet = spreadsheet.getSheetByName(EXPENSES_SHEET_NAME);
+    if (!sheet) throw new Error('Foglio non trovato: ' + EXPENSES_SHEET_NAME);
+    const rows = sheet.getDataRange().getValues();
+    const headers = ['Data', 'Categoria', 'Descrizione', 'Importo', 'Note'];
+    const data = [];
 
-      rows.slice(1).forEach(row => {
-        if (!row.slice(0, headers.length).some(value => value !== '' && value !== null && value !== undefined)) return;
-        const entry = {};
-        headers.forEach((header, column) => {
-          const value = row[column];
-          entry[header] = header === 'Data' && value instanceof Date
-            ? Utilities.formatDate(value, 'Europe/Rome', 'dd/MM/yyyy') : value;
-        });
-        data.push(entry);
+    rows.slice(1).forEach(row => {
+      if (!row.slice(0, headers.length).some(value => value !== '' && value !== null && value !== undefined)) return;
+      if (year !== null && sheetDateYear(row[0]) !== year) return;
+      const entry = {};
+      headers.forEach((header, column) => {
+        const value = row[column];
+        entry[header] = header === 'Data' && value instanceof Date
+          ? Utilities.formatDate(value, 'Europe/Rome', 'dd/MM/yyyy') : value;
       });
+      data.push(entry);
+    });
 
-      result = { code: 200, message: 'Lettura completata.', data: data };
-    } catch (error) {
-      result = { code: 500, message: error.toString(), data: [] };
-    }
+    result = { code: 200, message: 'Lettura completata.', data: data };
+  } catch (error) {
+    result = { code: error.badRequest ? 400 : 500, message: error.toString(), data: [] };
   }
 
   return ContentService.createTextOutput(JSON.stringify(result))
@@ -251,6 +246,12 @@ function parseTokenDate(value) {
     Number(parts[4]), Number(parts[5]), Number(parts[6]));
 }
 
+const BOOKING_CHANNELS = { 'booking.com': 'Booking.com', booking: 'Booking.com', airbnb: 'Airbnb', black: 'Black' };
+const BOOKING_CHANNEL_KEYS = { 'Booking.com': 'booking', Airbnb: 'airbnb', Black: 'black' };
+const BOOKING_HEADERS = ['ID', 'Nominativo', 'Cellulare', 'Check-in', 'Check-out', 'Numero Ospiti',
+  'Ospiti soggetti a tassa di soggiorno', 'Guadagno Lordo', 'Costi di pulizia', 'Tassa di soggiorno', 'Guadagno Netto',
+  'Stato prenotazione', 'Note', 'Channel'];
+
 function modificaPrenotazione(e) {
   return writePrenotazione(e, true);
 }
@@ -259,37 +260,18 @@ function cancellaPrenotazione(e) {
   let lock;
   try {
     const request = JSON.parse(e.postData.contents);
-    const year = requiredBookingText(request.anno, 'Anno');
-    if (!Object.prototype.hasOwnProperty.call(spreadsheetIds, year)) {
-      throw new Error('Anno non supportato.');
-    }
-    const channels = { 'booking.com': 'Booking.com', booking: 'Booking.com', airbnb: 'Airbnb', black: 'Black' };
-    const channelKey = requiredBookingText(request.channel, 'Canale').toLowerCase();
-    if (!Object.prototype.hasOwnProperty.call(channels, channelKey)) throw new Error('Canale non valido.');
-    const channel = channels[channelKey];
-    const nominativo = requiredBookingText(request.nominativo, 'Nominativo');
+    const id = requiredBookingId(request.id);
 
     lock = LockService.getScriptLock();
     if (!lock.tryLock(30000)) throw new Error('Salvataggio occupato. Riprova tra poco.');
-    const spreadsheet = SpreadsheetApp.openById(spreadsheetIds[year]);
-    const sheet = spreadsheet.getSheets().find(candidate => candidate.getName().toLowerCase() === channel.toLowerCase());
-    if (!sheet) throw new Error('Foglio non trovato: ' + channel);
-    const data = sheet.getDataRange().getValues();
-    const headers = (data[0] || []).map(header => String(header).trim().toLowerCase());
-    const nameColumn = headers.indexOf('nominativo');
-    const statusColumn = headers.indexOf('stato prenotazione');
-    if (nameColumn === -1 || statusColumn === -1) {
-      throw new Error('Colonna Nominativo o Stato prenotazione mancante nel foglio ' + channel);
-    }
-    const rowIndex = data.findIndex((row, index) => index > 0 && String(row[nameColumn] ?? '').trim() === nominativo);
-    if (rowIndex === -1) throw new Error('Prenotazione non trovata.');
-    sheet.getRange(rowIndex + 1, statusColumn + 1).setValue('cancellata');
+    const bookings = openBookingsSheet();
+    const rowIndex = findBookingRow(bookings, id);
+    bookings.sheet.getRange(rowIndex + 1, bookings.columns['Stato prenotazione'] + 1).setValue('cancellata');
     SpreadsheetApp.flush();
 
     return ContentService.createTextOutput(JSON.stringify({
       status: 'success',
-      year: Number(year),
-      channel: channel,
+      id: id,
       row: rowIndex + 1
     })).setMimeType(ContentService.MimeType.TEXT);
   } catch (error) {
@@ -302,63 +284,53 @@ function cancellaPrenotazione(e) {
   }
 }
 
-
 function leggiPrenotazione(e) {
-  
-  const year = String(e && e.parameter && e.parameter.anno || '').trim();
   let result;
-  if (!Object.prototype.hasOwnProperty.call(spreadsheetIds, year)) {
-    result = { code: 400, message: 'Parametro anno mancante o non supportato.', data: [] };
-  } else {
-    try {
-      const spreadsheet = SpreadsheetApp.openById(spreadsheetIds[year]);
-      const sheets = spreadsheet.getSheets();
-      const timeZone = 'Europe/Rome';
-      const data = [];
-      const channels = ['booking', 'airbnb', 'black'];
-
-      [1, 2, 3].forEach(index => {
-        const sheet = sheets[index];
-        if (!sheet) throw new Error('Sheet con indice ' + index + ' non trovato.');
-        const rows = sheet.getDataRange().getValues();
-        if (!rows.length) return;
-        const headers = rows[0].map(header => String(header).trim());
-        const nameColumn = headers.indexOf('Nominativo');
-        const statusColumn = headers.indexOf('Stato prenotazione');
-
-        rows.slice(1).forEach(row => {
-          if (!String(row[nameColumn] ?? '').trim()) return;
-          if (String(row[statusColumn] ?? '').trim().toLowerCase() === 'cancellata') return;
-          const entry = {};
-          let hasData = false;
-          headers.forEach((header, column) => {
-            if (!header) return;
-            const value = row[column];
-            entry[header] = (header === 'Check-in' || header === 'Check-out') && value instanceof Date
-              ? Utilities.formatDate(value, timeZone, 'dd/MM/yyyy') : value;
-            if (header === 'Cellulare' && typeof value === 'string') {
-              entry[header] = value.replace(/^\\+/, '+');
-            }
-            if (value !== '' && value !== null && value !== undefined) hasData = true;
-          });
-          entry.channel = channels[index - 1];
-          if (hasData) data.push(entry);
-        });
-      });
-
-      result = { code: 200, message: 'Lettura completata.', data: data };
-    } catch (error) {
-      result = { code: 500, message: error.toString(), data: [] };
+  try {
+    const year = parseYearFilter(e && e.parameter && e.parameter.anno);
+    let bookings = openBookingsSheet();
+    if (bookingRowsWithoutId(bookings).length) {
+      const lock = LockService.getScriptLock();
+      if (!lock.tryLock(30000)) throw new Error('Foglio occupato. Riprova tra poco.');
+      try {
+        bookings = openBookingsSheet();
+        assignMissingBookingIds(bookings);
+      } finally {
+        lock.releaseLock();
+      }
     }
+    const columns = bookings.columns;
+    const timeZone = 'Europe/Rome';
+    const data = [];
+
+    bookings.data.slice(1).forEach(row => {
+      if (!String(row[columns.Nominativo] ?? '').trim()) return;
+      if (String(row[columns['Stato prenotazione']] ?? '').trim().toLowerCase() === 'cancellata') return;
+      if (year !== null && sheetDateYear(row[columns['Check-in']]) !== year) return;
+      const channel = BOOKING_CHANNELS[String(row[columns.Channel] ?? '').trim().toLowerCase()];
+      if (!channel) return;
+
+      const entry = {};
+      BOOKING_HEADERS.forEach(header => {
+        const value = row[columns[header]];
+        entry[header] = (header === 'Check-in' || header === 'Check-out') && value instanceof Date
+          ? Utilities.formatDate(value, timeZone, 'dd/MM/yyyy') : value;
+        if (header === 'Cellulare' && typeof value === 'string') {
+          entry[header] = value.replace(/^\\+/, '+');
+        }
+      });
+      entry.channel = BOOKING_CHANNEL_KEYS[channel];
+      data.push(entry);
+    });
+
+    result = { code: 200, message: 'Lettura completata.', data: data };
+  } catch (error) {
+    result = { code: error.badRequest ? 400 : 500, message: error.toString(), data: [] };
   }
 
   return ContentService.createTextOutput(JSON.stringify(result))
     .setMimeType(ContentService.MimeType.JSON);
 }
-
-
-
-
 
 function savePrenotazione(e) {
   return writePrenotazione(e, false);
@@ -372,27 +344,12 @@ function writePrenotazione(e, updating) {
     const checkout = parseBookingDate(request.checkout);
     if (checkout.serial <= checkin.serial) throw new Error('Il check-out deve essere successivo al check-in.');
 
-    const year = updating ? requiredBookingText(request.anno, 'Anno') : String(checkin.year);
-    if (!Object.prototype.hasOwnProperty.call(spreadsheetIds, year)) throw new Error('Anno non supportato.');
-    const spreadsheetId = spreadsheetIds[year];
-
-    const channels = { 'booking.com': 'Booking.com', booking: 'Booking.com', airbnb: 'Airbnb', black: 'Black' };
-    const channelKey = requiredBookingText(request.channel, 'Canale').toLowerCase();
-    if (!Object.prototype.hasOwnProperty.call(channels, channelKey)) throw new Error('Canale non valido.');
-    const channel = channels[channelKey];
-
+    const id = updating ? requiredBookingId(request.id) : null;
+    const channel = requiredBookingChannel(request.channel);
     const nominativo = requiredBookingText(request.nominativo, 'Nominativo');
     const cellulare = String(request.cellulare ?? '').trim();
     if (cellulare && !/^[0-9 +]+$/.test(cellulare)) throw new Error('Cellulare: sono ammessi solo numeri, spazi e +.');
     const numeroOspiti = requiredBookingText(request.numeroOspiti, 'Numero Ospiti');
-    let taxGuests = 0;
-    if (channel !== 'Black') {
-      const taxGuestsText = requiredBookingText(request.ospitiSoggettiATassa, 'Ospiti soggetti a tassa di soggiorno');
-      taxGuests = Number(taxGuestsText);
-      if (!/^\d+$/.test(taxGuestsText) || !Number.isSafeInteger(taxGuests)) {
-        throw new Error('Gli ospiti soggetti a tassa devono essere un intero non negativo.');
-      }
-    }
 
     const valuesByHeader = {
       Nominativo: bookingSheetText(nominativo),
@@ -400,51 +357,52 @@ function writePrenotazione(e, updating) {
       'Check-in': checkin.serial,
       'Check-out': checkout.serial,
       'Numero Ospiti': bookingSheetText(numeroOspiti),
-      Note: bookingSheetText(String(request.note || '').trim())
+      'Guadagno Lordo': parseBookingAmount(request.guadagnoLordo),
+      'Costi di pulizia': parseBookingAmount(request.costiPulizia),
+      Note: bookingSheetText(String(request.note || '').trim()),
+      Channel: channel
     };
     if (!updating) valuesByHeader['Stato prenotazione'] = 'prenotata';
-    if (channel === 'Airbnb') valuesByHeader['Costi di pulizia'] = parseBookingAmount(request.costiPulizia);
-    if (channel === 'Airbnb' || channel === 'Booking.com' ) {
-      valuesByHeader['Guadagno Lordo'] = parseBookingAmount(request.guadagnoLordo);
+    if (channel === 'Black') {
+      valuesByHeader['Ospiti soggetti a tassa di soggiorno'] = 0;
+    } else {
+      const taxGuestsText = requiredBookingText(request.ospitiSoggettiATassa, 'Ospiti soggetti a tassa di soggiorno');
+      const taxGuests = Number(taxGuestsText);
+      if (!/^\d+$/.test(taxGuestsText) || !Number.isSafeInteger(taxGuests)) {
+        throw new Error('Gli ospiti soggetti a tassa devono essere un intero non negativo.');
+      }
       valuesByHeader['Ospiti soggetti a tassa di soggiorno'] = taxGuests;
     }
-    if (channel === 'Black') valuesByHeader['Guadagno Netto'] = parseBookingAmount(request.guadagnoLordo);
 
     lock = LockService.getScriptLock();
     if (!lock.tryLock(30000)) throw new Error('Salvataggio occupato. Riprova tra poco.');
-    const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
-    const sheet = spreadsheet.getSheets().find(candidate => candidate.getName().toLowerCase() === channel.toLowerCase());
-    if (!sheet) throw new Error('Foglio non trovato: ' + channel);
-    const data = sheet.getDataRange().getValues();
-    const headers = (data[0] || []).map(header => String(header).trim().toLowerCase());
-    const entries = Object.keys(valuesByHeader).map(header => {
-      const column = headers.indexOf(header.toLowerCase());
-      if (column === -1) throw new Error('Colonna mancante nel foglio ' + channel + ': ' + header);
-      return { header: header, column: column + 1, value: valuesByHeader[header] };
-    });
-    const nameColumn = headers.indexOf('nominativo');
-    const rowIndex = data.findIndex((row, index) => index > 0 &&
-      String(row[nameColumn] ?? '').trim() === (updating ? nominativo : ''));
-    if (updating && rowIndex === -1) throw new Error('Prenotazione non trovata.');
-    const rowNumber = rowIndex === -1 ? data.length + 1 : rowIndex + 1;
-
-    entries.forEach(entry => {
-      const cell = sheet.getRange(rowNumber, entry.column);
-      cell.setValue(entry.value);
-      if (entry.header === 'Check-in' || entry.header === 'Check-out') cell.setNumberFormat('dd/MM/yyyy');
-      if (entry.header === 'Guadagno Lordo' || entry.header === 'Guadagno Netto') cell.setNumberFormat('#,##0.00 "\u20ac"');
-      if (entry.header === 'Costi di pulizia') cell.setNumberFormat('#,##0.00 "\u20ac"');
-    });
-    const nightsColumn = headers.indexOf('notti');
-    if (nightsColumn !== -1) {
-      const nightsCell = sheet.getRange(rowNumber, nightsColumn + 1);
-      if (!nightsCell.getFormula()) nightsCell.setValue(checkout.serial - checkin.serial);
+    const bookings = openBookingsSheet();
+    let rowIndex;
+    let bookingId = id;
+    if (updating) {
+      rowIndex = findBookingRow(bookings, id);
+    } else {
+      assignMissingBookingIds(bookings);
+      bookingId = nextBookingId(bookings);
+      valuesByHeader.ID = bookingId;
+      // Le righe con Nominativo vuoto contengono già le formule (Tassa di soggiorno, Guadagno Netto)
+      rowIndex = bookings.data.findIndex((row, index) => index > 0 &&
+        !String(row[bookings.columns.Nominativo] ?? '').trim());
     }
+    const rowNumber = rowIndex === -1 ? bookings.data.length + 1 : rowIndex + 1;
+
+    Object.keys(valuesByHeader).forEach(header => {
+      const cell = bookings.sheet.getRange(rowNumber, bookings.columns[header] + 1);
+      cell.setValue(valuesByHeader[header]);
+      if (header === 'Check-in' || header === 'Check-out') cell.setNumberFormat('dd/MM/yyyy');
+      if (header === 'Guadagno Lordo' || header === 'Costi di pulizia') cell.setNumberFormat('#,##0.00 "\u20ac"');
+    });
     SpreadsheetApp.flush();
 
     return ContentService.createTextOutput(JSON.stringify({
       status: 'success',
-      year: Number(year),
+      id: bookingId,
+      year: checkin.year,
       channel: channel,
       row: rowNumber
     })).setMimeType(ContentService.MimeType.TEXT);
@@ -457,6 +415,106 @@ function writePrenotazione(e, updating) {
   } finally {
     if (lock && lock.hasLock()) lock.releaseLock();
   }
+}
+
+function openBookingsSheet() {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID_BOOKINGS).getSheetByName(BOOKINGS_SHEET_NAME);
+  if (!sheet) throw new Error('Foglio non trovato: ' + BOOKINGS_SHEET_NAME);
+  const data = sheet.getDataRange().getValues();
+  const headers = (data[0] || []).map(header => String(header).trim().toLowerCase());
+  const columns = {};
+  BOOKING_HEADERS.forEach(header => {
+    const column = headers.indexOf(header.toLowerCase());
+    if (column === -1) throw new Error('Colonna mancante nel foglio ' + BOOKINGS_SHEET_NAME + ': ' + header);
+    columns[header] = column;
+  });
+  return { sheet: sheet, data: data, columns: columns };
+}
+
+function findBookingRow(bookings, id) {
+  const columns = bookings.columns;
+  const matches = [];
+  bookings.data.forEach((row, index) => {
+    if (index > 0 && bookingIdValue(row[columns.ID]) === id &&
+      String(row[columns['Stato prenotazione']] ?? '').trim().toLowerCase() !== 'cancellata') {
+      matches.push(index);
+    }
+  });
+  if (!matches.length) throw new Error('Prenotazione non trovata.');
+  if (matches.length > 1) throw new Error('ID ' + id + ' duplicato nel foglio ' + BOOKINGS_SHEET_NAME + '.');
+  return matches[0];
+}
+
+function bookingIdValue(value) {
+  const text = String(value ?? '').trim();
+  return /^\d+$/.test(text) ? Number(text) : null;
+}
+
+function nextBookingId(bookings) {
+  return bookings.data.slice(1).reduce((max, row) =>
+    Math.max(max, bookingIdValue(row[bookings.columns.ID]) || 0), 0) + 1;
+}
+
+function bookingRowsWithoutId(bookings) {
+  const columns = bookings.columns;
+  const rows = [];
+  bookings.data.forEach((row, index) => {
+    if (index > 0 && String(row[columns.Nominativo] ?? '').trim() && bookingIdValue(row[columns.ID]) === null) {
+      rows.push(index);
+    }
+  });
+  return rows;
+}
+
+// Va chiamata sotto lock: assegna un ID incrementale alle prenotazioni che ne sono prive
+function assignMissingBookingIds(bookings) {
+  const rows = bookingRowsWithoutId(bookings);
+  if (!rows.length) return;
+  let id = nextBookingId(bookings);
+  rows.forEach(index => {
+    bookings.sheet.getRange(index + 1, bookings.columns.ID + 1).setValue(id);
+    bookings.data[index][bookings.columns.ID] = id;
+    id++;
+  });
+  SpreadsheetApp.flush();
+}
+
+function requiredBookingId(value) {
+  const id = bookingIdValue(value);
+  if (!id) throw new Error('ID prenotazione mancante o non valido.');
+  return id;
+}
+
+function sheetDateYear(value) {
+  if (value instanceof Date) {
+    return isNaN(value.getTime()) ? null : Number(Utilities.formatDate(value, 'Europe/Rome', 'yyyy'));
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return new Date((value - 25569) * 86400000).getUTCFullYear();
+  }
+  const parts = /^\d{1,2}\/\d{1,2}\/(\d{4})$/.exec(String(value ?? '').trim());
+  return parts ? Number(parts[1]) : null;
+}
+
+// Restituisce null quando anno = "tutti", cioè nessun filtro per anno
+function parseYearFilter(value) {
+  return String(value ?? '').trim().toLowerCase() === ALL_YEARS ? null : requiredBookingYear(value);
+}
+
+function requiredBookingYear(value) {
+  const text = String(value ?? '').trim();
+  if (!/^\d{4}$/.test(text)) {
+    const error = new Error('Parametro anno mancante o non valido.');
+    error.badRequest = true;
+    throw error;
+  }
+  return Number(text);
+}
+
+function requiredBookingChannel(value) {
+  const channel = BOOKING_CHANNELS[requiredBookingText(value, 'Canale').toLowerCase()];
+  if (!channel) throw new Error('Canale non valido.');
+  return channel;
 }
 
 function requiredBookingText(value, label) {

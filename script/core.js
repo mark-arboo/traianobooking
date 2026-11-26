@@ -1,6 +1,7 @@
 ﻿// URL applicazione Script google
-const bookingScriptURL = 'https://script.google.com/macros/s/AKfycbxYXd8ZWWFheDTivWNv9_hkTEjW2tGVzhfDxmQsow1KBbOQcCn0Aqr778FnDMNf02DNLw/exec';
+const bookingScriptURL = 'https://script.google.com/macros/s/AKfycbxFq5h6XHTyXlFMf8gx_ifdY_VuM1hq1oB4C-IqOIiJWys4yuaqCQRxnP023vqucooa3Q/exec';
 
+const ALL_YEARS = 'tutti';
 let arrayBooking = [];
 let selectedBookingYear = new Date().getFullYear();
 let pendingBookingYear = null;
@@ -12,8 +13,16 @@ let currentYear = new Date().getFullYear();
 let cache = false;
 const pendingBookingDeletions = new WeakSet();
 
+function normalizeBookingYear(year) {
+    return String(year).trim().toLowerCase() === ALL_YEARS ? ALL_YEARS : Number(year);
+}
+
+function titleWithYear(title) {
+    return selectedBookingYear === ALL_YEARS ? title : `${title} ${selectedBookingYear}`;
+}
+
 function changeBookingYear(year) {
-    pendingBookingYear = Number(year);
+    pendingBookingYear = normalizeBookingYear(year);
     updateBookingYearSelection();
     return loadFromRemote(year).finally(() => {
         pendingBookingYear = null;
@@ -30,7 +39,7 @@ function loadFromRemote(year) {
         return Promise.resolve();
     }
 
-    const bookingYear = Number(year);
+    const bookingYear = normalizeBookingYear(year);
     const yearButtons = document.querySelectorAll('#bookingYearSelector .booking-year-button');
     yearButtons.forEach(button => { button.disabled = true; });
     const listView = document.getElementById('listView');
@@ -103,7 +112,7 @@ function handleUnauthorized() {
 function initializeApp() {
     const storedYear = sessionStorage.getItem('arrayBookingYear');
     if (document.querySelector(`#bookingYearSelector .booking-year-button[data-year="${storedYear}"]`)) {
-        selectedBookingYear = Number(storedYear);
+        selectedBookingYear = normalizeBookingYear(storedYear);
     }
     updateBookingYearSelection();
 
@@ -237,7 +246,7 @@ async function submitLogin(form, onLoginSuccess) {
 function showGraphicView() {
 
     sessionStorage.setItem('lastActivePanel', 'grafico');
-    currentYear = selectedBookingYear;
+    currentYear = selectedBookingYear === ALL_YEARS ? new Date().getFullYear() : selectedBookingYear;
 
     // Rimuove la classe active da tutti i pulsanti
     document.getElementById('listViewBtn').classList.remove('active');
@@ -246,7 +255,7 @@ function showGraphicView() {
     document.getElementById('graphicViewBtn').classList.add('active');
 
     // Aggiorna il titolo
-    updateViewHeader(`Profitto ${selectedBookingYear}`, 'grafico');
+    updateViewHeader(titleWithYear('Profitto'), 'grafico');
 
     const rendering = renderGraphicView();
   
@@ -260,13 +269,12 @@ function showGraphicView() {
 
 async function renderGraphicView() {
     const requestId = ++graphicRequestId;
-    const referenceYear = selectedBookingYear;
     const year = currentYear;
     const month = currentMonth;
     const graphicContainer = document.getElementById('graphicView');
     graphicContainer.innerHTML = ''; // Pulisce il contenitore
     graphicContainer.setAttribute('aria-busy', 'true');
-    if (graphicContainer.classList.contains('active')) updateViewHeader(`Profitto ${selectedBookingYear}`, 'grafico');
+    if (graphicContainer.classList.contains('active')) updateViewHeader(titleWithYear('Profitto'), 'grafico');
     
     // Crea l'header con navigazione
     const header = document.createElement('div');
@@ -382,7 +390,7 @@ async function renderGraphicView() {
     graphicContainer.appendChild(status);
 
     try {
-        const expenses = await loadExpenses(referenceYear);
+        const expenses = await loadExpenses(selectedBookingYear);
         if (requestId !== graphicRequestId) return;
         const monthlyTotal = expenses.reduce((sum, expense) => {
             const date = parseItalianDate(expense.Data);
@@ -521,9 +529,9 @@ function showInsertBooking(booking = null) {
                 <label for="bookingGross">Guadagno Lordo (euro)</label>
                 <input id="bookingGross" name="Guadagno Lordo" type="number" inputmode="decimal" min="0" step="0.01" required>
             </div>
-            <div id="bookingCleaningField" class="booking-field booking-field-wide" hidden>
+            <div id="bookingCleaningField" class="booking-field booking-field-wide">
                 <label for="bookingCleaning">Costi di pulizia (euro)</label>
-                <input id="bookingCleaning" name="Costi di pulizia" type="number" inputmode="decimal" min="0" step="0.01" disabled>
+                <input id="bookingCleaning" name="Costi di pulizia" type="number" inputmode="decimal" min="0" step="0.01" value="0" required>
             </div>
             <div class="booking-field booking-field-wide">
                 <label for="bookingNotes">Note</label>
@@ -539,7 +547,7 @@ function showInsertBooking(booking = null) {
     const form = document.getElementById('bookingForm');
     form.dataset.action = booking ? 'modificaPrenotazione' : 'savePrenotazione';
     if (booking) {
-        form.dataset.year = String(parseItalianDate(booking['Check-in']).getFullYear());
+        form.dataset.id = String(booking.ID ?? '');
         const channels = { booking: 'Booking.com', 'booking.com': 'Booking.com', airbnb: 'Airbnb', black: 'Black' };
         const channel = channels[String(booking.channel).toLowerCase()];
         const values = {
@@ -550,19 +558,17 @@ function showInsertBooking(booking = null) {
             'Check-out': booking['Check-out'],
             'Numero Ospiti': booking['Numero Ospiti'],
             'Ospiti soggetti a tassa di soggiorno': booking['Ospiti soggetti a tassa di soggiorno'],
-            'Guadagno Lordo': channel === 'Black' ? booking['Guadagno Netto'] : booking['Guadagno Lordo'],
-            'Costi di pulizia': booking['Costi di pulizia'],
+            'Guadagno Lordo': booking['Guadagno Lordo'],
+            'Costi di pulizia': booking['Costi di pulizia'] === '' || booking['Costi di pulizia'] == null ? 0 : booking['Costi di pulizia'],
             Note: booking.Note
         };
         Object.entries(values).forEach(([name, value]) => {
             form.elements.namedItem(name).value = value ?? '';
         });
-        form.elements.namedItem('channel').disabled = true;
-        form.elements.namedItem('Nominativo').readOnly = true;
         form.querySelector('button[type="submit"]').textContent = 'Salva modifiche';
     }
-    updateBookingCleaningField(form);
-    form.elements.namedItem('channel').addEventListener('change', () => updateBookingCleaningField(form));
+    updateBookingChannelFields(form);
+    form.elements.namedItem('channel').addEventListener('change', () => updateBookingChannelFields(form));
     form.addEventListener('submit', submitBooking);
     form.addEventListener('focusout', event => {
         if (!event.target.matches('input, select, textarea')) return;
@@ -597,31 +603,20 @@ function formatBookingDateInput(input) {
     input.setSelectionRange(nextCursor, nextCursor);
 }
 
-function updateBookingCleaningField(form) {
-    const channel = form.elements.namedItem('channel').value;
-    const isAirbnb = channel === 'Airbnb';
-    document.querySelector('label[for="bookingGross"]').textContent =
-        channel === 'Black' ? 'Guadagno Netto (euro)' : 'Guadagno Lordo (euro)';
-    const field = form.elements.namedItem('Costi di pulizia');
-    document.getElementById('bookingCleaningField').hidden = !isAirbnb;
-    field.disabled = !isAirbnb;
-    field.required = isAirbnb;
-    if (!isAirbnb) {
-        field.setCustomValidity('');
-        field.removeAttribute('aria-invalid');
-        delete field.dataset.touched;
-    }
-
-    const showTaxGuests = channel !== 'Black';
-    const taxField = form.elements.namedItem('Ospiti soggetti a tassa di soggiorno');
-    document.getElementById('bookingTaxGuestsField').hidden = !showTaxGuests;
-    taxField.disabled = !showTaxGuests;
-    taxField.required = showTaxGuests;
-    if (!showTaxGuests) {
-        taxField.setCustomValidity('');
-        taxField.removeAttribute('aria-invalid');
-        delete taxField.dataset.touched;
-    }
+function updateBookingChannelFields(form) {
+    const showField = form.elements.namedItem('channel').value !== 'Black';
+    [['bookingTaxGuestsField', 'Ospiti soggetti a tassa di soggiorno'], ['bookingCleaningField', 'Costi di pulizia']]
+        .forEach(([containerId, name]) => {
+            const field = form.elements.namedItem(name);
+            document.getElementById(containerId).hidden = !showField;
+            field.disabled = !showField;
+            field.required = showField;
+            if (!showField) {
+                field.setCustomValidity('');
+                field.removeAttribute('aria-invalid');
+                delete field.dataset.touched;
+            }
+        });
 }
 
 function updateBookingFieldError(field) {
@@ -743,14 +738,14 @@ async function submitBooking(event) {
 
         status.textContent = 'Prenotazione salvata.';
         if (!updating) form.reset();
-        await changeBookingYear(String(result.year));
+        await changeBookingYear(selectedBookingYear === ALL_YEARS ? ALL_YEARS : String(result.year));
     } catch (error) {
         status.textContent = 'Salvataggio non confermato. Verifica il foglio prima di riprovare. ' + error.message;
     } finally {
         controls.forEach((control, index) => { control.disabled = disabledStates[index]; });
         button.textContent = updating ? 'Salva modifiche' : 'Inserisci prenotazione';
         form.dataset.saving = 'false';
-        updateBookingCleaningField(form);
+        updateBookingChannelFields(form);
     }
 }
 
@@ -775,17 +770,17 @@ function collectBookingData(event) {
         checkout: data.get('Check-out'),
         numeroOspiti: guests,
         note: data.get('Note').trim(),
-        guadagnoLordo: euroFormatter.format(Number(data.get('Guadagno Lordo').replace(',', '.')))
+        guadagnoLordo: euroFormatter.format(Number(data.get('Guadagno Lordo').replace(',', '.'))),
+        costiPulizia: form.elements.namedItem('channel').value === 'Black'
+            ? euroFormatter.format(0)
+            : euroFormatter.format(Number(data.get('Costi di pulizia').replace(',', '.')))
     };
     if (form.dataset.action === 'modificaPrenotazione') {
-        bookingData.anno = Number(form.dataset.year);
+        bookingData.id = Number(form.dataset.id);
     }
 
     if (bookingData.channel !== 'Black') {
         bookingData.ospitiSoggettiATassa = Number(data.get('Ospiti soggetti a tassa di soggiorno'));
-    }
-    if (bookingData.channel === 'Airbnb') {
-        bookingData.costiPulizia = euroFormatter.format(Number(data.get('Costi di pulizia').replace(',', '.')));
     }
 
     return bookingData;
@@ -794,7 +789,7 @@ function collectBookingData(event) {
 function showInsertExpense() {
     sessionStorage.setItem('lastActivePanel', 'inserisciSpesa');
     document.querySelectorAll('.view, .tabButton').forEach(element => element.classList.remove('active'));
-    updateViewHeader(`Nuova Spesa ${selectedBookingYear}`, 'inserisciSpesa');
+    updateViewHeader(titleWithYear('Nuova Spesa'), 'inserisciSpesa');
 
     const container = document.getElementById('insertExpenseView');
     container.innerHTML = `
@@ -886,7 +881,7 @@ async function submitExpense(event) {
     if (!form.reportValidity()) return;
 
     const data = new FormData(form);
-    const year = Number(form.dataset.year);
+    const year = normalizeBookingYear(form.dataset.year);
     const expenseData = {
         action: 'saveSpesa',
         token: localStorage.getItem('token') ?? '',
@@ -920,17 +915,19 @@ async function submitExpense(event) {
             status.textContent = 'Sessione scaduta. Accedi nuovamente e salva la spesa.';
             showLoginView(() => {
                 document.querySelectorAll('.view, .tabButton').forEach(element => element.classList.remove('active'));
-                updateViewHeader(`Nuova Spesa ${year}`, 'inserisciSpesa');
+                updateViewHeader(titleWithYear('Nuova Spesa'), 'inserisciSpesa');
             });
             return;
         }
         if (result.status !== 'success') throw new Error(result.message || 'Salvataggio spesa non riuscito.');
-        if (result.year !== year) throw new Error('Anno nella risposta di salvataggio non valido.');
+        if (!Number.isInteger(result.year)) throw new Error('Anno nella risposta di salvataggio non valido.');
 
         expensesRequestId++;
         graphicRequestId++;
         expensesCacheVersion++;
         sessionStorage.removeItem('arrayExpenses_' + year);
+        sessionStorage.removeItem('arrayExpenses_' + result.year);
+        sessionStorage.removeItem('arrayExpenses_' + ALL_YEARS);
         status.textContent = 'Spesa salvata.';
         form.reset();
         if (document.getElementById('expensesView').classList.contains('active') ||
@@ -991,7 +988,7 @@ async function showListExpenses() {
     const requestId = ++expensesRequestId;
     sessionStorage.setItem('lastActivePanel', 'spese');
     document.querySelectorAll('.view, .tabButton').forEach(element => element.classList.remove('active'));
-    updateViewHeader(`Spese ${year}`, 'spese');
+    updateViewHeader(titleWithYear('Spese'), 'spese');
 
     const view = document.getElementById('expensesView');
     const items = document.getElementById('expenseItems');
@@ -1030,7 +1027,7 @@ async function showListExpenses() {
             items.appendChild(card);
         });
         if (!expenses.length) {
-            status.textContent = 'Nessuna spesa per il ' + year + '.';
+            status.textContent = year === ALL_YEARS ? 'Nessuna spesa.' : 'Nessuna spesa per il ' + year + '.';
             status.hidden = false;
         }
     } catch (error) {
@@ -1064,7 +1061,7 @@ function showListView() {
     document.getElementById('listViewBtn').classList.add('active');
 
     // Aggiorna il titolo
-    updateViewHeader(`Prenotazioni ${selectedBookingYear}`, 'lista');
+    updateViewHeader(titleWithYear('Prenotazioni'), 'lista');
  
     // svuota la visualizzazione precedente
     const bookingItems = document.getElementById('bookingItems');
@@ -1123,7 +1120,7 @@ function showCalendarView() {
     document.getElementById('calendarViewBtn').classList.add('active');
 
     // Aggiorna il titolo
-    updateViewHeader(`Disponibilità ${selectedBookingYear}`, 'calendario');
+    updateViewHeader(titleWithYear('Disponibilità'), 'calendario');
     
     renderCalendar();
 
@@ -1285,7 +1282,7 @@ function printCard(component, booking) {
         component.innerHTML = `
             <p><strong>${booking.Nominativo}</strong></p>
             <p><i class="fa fa-calendar-o" aria-hidden="true"></i> ${booking['Check-in']} - ${booking['Check-out']}</p>
-            <p><i class="fa fa-moon-o" aria-hidden="true"></i> ${booking.Notti} Notti</p>
+            <p><i class="fa fa-moon-o" aria-hidden="true"></i> ${bookingNights(booking)} Notti</p>
             <p><i class="fa fa-user-o" aria-hidden="true"></i> ${guests || '-'} ${guests.length === 1 ? 'Ospiti' : ''}</p>
             <p><i class="fa fa-percent" aria-hidden="true"></i> ${booking['Tassa di soggiorno'] && booking.hasOwnProperty('Tassa di soggiorno') ? formatEuro(booking['Tassa di soggiorno']) + ' € Tassa di soggiorno' : 'No Tax'}</p>
             <p><i class="fa fa-phone" aria-hidden="true"></i> ${phone ? phone.replace(/\\/g, '+') : ' - '}</p>
@@ -1370,9 +1367,7 @@ async function deleteBooking(booking, button) {
             body: JSON.stringify({
                 action: 'cancellaPrenotazione',
                 token: localStorage.getItem('token') ?? '',
-                anno: year,
-                channel: booking.channel,
-                nominativo: booking.Nominativo
+                id: Number(booking.ID)
             })
         });
         if (!response.ok) throw new Error('Risposta HTTP ' + response.status);
@@ -1468,6 +1463,14 @@ function excelDateToJSDate(serial) {
 }
 
 // Funzione per convertire stringa "gg/mm/aaaa" in oggetto Date per ordinamento
+function bookingNights(booking) {
+    const checkin = parseItalianDate(booking['Check-in']);
+    const checkout = parseItalianDate(booking['Check-out']);
+    // Math.round compensa il cambio dell'ora legale
+    const nights = Math.round((checkout - checkin) / 86400000);
+    return checkin.getTime() && checkout.getTime() && nights > 0 ? nights : '-';
+}
+
 function parseItalianDate(dateString) {
     if (!dateString || typeof dateString !== 'string') return new Date(0);
     const parts = dateString.split('/');

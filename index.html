@@ -96,6 +96,7 @@
               <input type="text" class="search-input" placeholder="Cerca prenotazione" aria-label="Cerca prenotazione" onkeyup="filterBookings(this)">
             </div>
             <div id="bookingYearSelector" class="booking-year-selector" role="group" aria-label="Anno prenotazioni">
+              <button type="button" class="booking-year-button" data-year="tutti" aria-pressed="false" onclick="changeBookingYear('tutti')">Tutti</button>
               <button type="button" class="booking-year-button" data-year="2027" aria-pressed="false" onclick="changeBookingYear('2027')">2027</button>
               <button type="button" class="booking-year-button" data-year="2026" aria-pressed="false" onclick="changeBookingYear('2026')">2026</button>
             </div>
