@@ -24,7 +24,7 @@
 
   </head>
   <body onload="initializeApp()">
-    <header class="page-header">
+    <header class="page-header" hidden>
       <div class="page-header-main">
         <button id="backToListBtn" type="button" class="header-button" onclick="showListView()" aria-label="Torna alle prenotazioni" title="Torna alle prenotazioni" hidden>
           <i class="fa fa-arrow-left" aria-hidden="true"></i>
@@ -42,7 +42,7 @@
       </div>
     </header>
     
-    <div class="tabbar">
+    <div class="tabbar" hidden>
          <button id="listViewBtn" class="tabButton active" onclick="showListView()">
             <i class="fa fa-list" aria-hidden="true"></i>
             <span>Elenco</span>
@@ -63,7 +63,7 @@
     </div>
 
     <div class="content">
-        <div id="loginView" class="view">
+        <div id="loginView" class="view active">
           <div class="login-card">
             <div class="login-brand">
               <img src="./img/logo_192x192.png" alt="Logo Traiano Booking" class="login-logo" width="96" height="96">
@@ -89,7 +89,7 @@
           </div>
         </div>
 
-        <div id="listView" class="view active">
+        <div id="listView" class="view">
           <div class="list-actions">
             <div class="search-field">
               <i class="fa fa-search" aria-hidden="true"></i>

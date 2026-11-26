@@ -12,59 +12,6 @@ let currentYear = new Date().getFullYear();
 let cache = false;
 const pendingBookingDeletions = new WeakSet();
 
-/**
- * Controlla se è la prima volta che l'applicazione viene caricata
- * o se è un refresh di pagina
- * @returns {boolean} true se è la prima volta, false se è un refresh
- */
-function isFirstLoad() {
-    // Verifica usando Navigation API moderna
-    const navigationEntries = performance.getEntriesByType('navigation');
-    let isRefresh = false;
-    
-    if (navigationEntries.length > 0) {
-        const navEntry = navigationEntries[0];
-        isRefresh = navEntry.type === 'reload';
-    } else {
-        // Fallback per browser più vecchi
-        isRefresh = performance.navigation && performance.navigation.type === performance.navigation.TYPE_RELOAD;
-    }
-    
-    // Verifica anche il sessionStorage per distinguere tra nuova sessione e refresh
-    const hasSessionData = sessionStorage.getItem('appLoaded');
-    
-    if (!hasSessionData && !isRefresh) {
-        // Prima volta in questa sessione
-        sessionStorage.setItem('appLoaded', 'true');
-        return true;
-    }
-    
-    return false;
-}
-
-
-
-
-/**
- * Logica eseguita al primo caricamento
- */
-function onFirstLoad() {
-
-    if (localStorage.getItem('arrayBooking') && cache &&
-        localStorage.getItem('arrayBookingYear') === String(selectedBookingYear)) {
-        console.log('onFirstLoad - Caricamento dati da localStorage');
-
-        arrayBooking = JSON.parse(localStorage.getItem('arrayBooking'));
-        sessionStorage.setItem('arrayBooking', localStorage.getItem('arrayBooking'));
-        sessionStorage.setItem('arrayBookingYear', String(selectedBookingYear));
-    
-        showListView(); // Mostra la vista lista all'avvio dell'app
-        
-    } else {
-        loadFromRemote(selectedBookingYear);
-    }
-}
-
 function changeBookingYear(year) {
     pendingBookingYear = Number(year);
     updateBookingYearSelection();
@@ -146,23 +93,6 @@ function loadFromRemote(year) {
 }
 
 /**
- * Logica eseguita durante il refresh
- */
-function onPageRefresh() {
-    const storedYear = sessionStorage.getItem('arrayBookingYear');
-    if (sessionStorage.getItem('arrayBooking') && (storedYear === '2026' || storedYear === '2027')) {
-        arrayBooking = JSON.parse(sessionStorage.getItem('arrayBooking'));
-        selectedBookingYear = Number(storedYear);
-        showListView();
-    } else {
-        onFirstLoad();
-    }
-}
-
-
-
-
-/**
  * Gestisce una risposta 401 (token mancante o scaduto): rimuove il token e torna alla schermata di login
  */
 function handleUnauthorized() {
@@ -171,23 +101,68 @@ function handleUnauthorized() {
 }
 
 function initializeApp() {
+    const storedYear = sessionStorage.getItem('arrayBookingYear');
+    if (document.querySelector(`#bookingYearSelector .booking-year-button[data-year="${storedYear}"]`)) {
+        selectedBookingYear = Number(storedYear);
+    }
     updateBookingYearSelection();
 
-    const firstLoad = isFirstLoad();
     const startApp = () => {
-        if (firstLoad) {
-            onFirstLoad();
-        } else {
-            onPageRefresh();
+        const lastPanel = sessionStorage.getItem('lastActivePanel');
+        const cachedBookings = readCachedBookings();
+        if (lastPanel && lastPanel !== 'lista' && cachedBookings) {
+            arrayBooking = cachedBookings;
+            restoreLastActivePanel(lastPanel);
+            return;
         }
+        showListView();
+        loadFromRemote(selectedBookingYear);
     };
 
-    if (localStorage.getItem('token')) {
-        startApp();
-        return;
-    }
     showLoginView(startApp);
+    if (localStorage.getItem('token')) {
+        hideLoginView();
+        startApp();
+    }
+}
 
+function readCachedBookings() {
+    if (sessionStorage.getItem('arrayBookingYear') !== String(selectedBookingYear)) return null;
+    try {
+        const bookings = JSON.parse(sessionStorage.getItem('arrayBooking'));
+        return Array.isArray(bookings) ? bookings : null;
+    } catch (error) {
+        return null;
+    }
+}
+
+function restoreLastActivePanel(panel) {
+    if (!localStorage.getItem('token') || document.getElementById('loginView').classList.contains('active')) return;
+    switch (panel) {
+        case 'calendario':
+            showCalendarView();
+            break;
+        case 'spese':
+            showListExpenses();
+            break;
+        case 'grafico':
+            showGraphicView();
+            break;
+        case 'inserisci':
+            showInsertBooking();
+            break;
+        case 'inserisciSpesa':
+            showInsertExpense();
+            break;
+        default:
+            showListView();
+    }
+}
+
+function hideLoginView() {
+    document.getElementById('loginView').classList.remove('active');
+    document.querySelector('.page-header').hidden = false;
+    document.querySelector('.tabbar').hidden = false;
 }
 
 /**
@@ -254,9 +229,7 @@ async function submitLogin(form, onLoginSuccess) {
     form.reset();
     toggleLoginPasswordVisibility(false);
     button.disabled = false;
-    document.getElementById('loginView').classList.remove('active');
-    document.querySelector('.page-header').hidden = false;
-    document.querySelector('.tabbar').hidden = false;
+    hideLoginView();
     onLoginSuccess();
 }
 
