@@ -17,12 +17,29 @@ function normalizeBookingYear(year) {
     return String(year).trim().toLowerCase() === ALL_YEARS ? ALL_YEARS : Number(year);
 }
 
-function titleWithYear(title) {
-    return selectedBookingYear === ALL_YEARS ? title : `${title} ${selectedBookingYear}`;
+function bookingsCacheKey(year) {
+    return 'arrayBooking_' + year;
+}
+
+function clearBookingsCache() {
+    Object.keys(sessionStorage)
+        .filter(key => key.startsWith('arrayBooking_'))
+        .forEach(key => sessionStorage.removeItem(key));
 }
 
 function changeBookingYear(year) {
-    pendingBookingYear = normalizeBookingYear(year);
+    const bookingYear = normalizeBookingYear(year);
+    const cachedBookings = readCachedBookings(bookingYear);
+    if (cachedBookings) {
+        arrayBooking = cachedBookings;
+        selectedBookingYear = bookingYear;
+        sessionStorage.setItem('arrayBookingYear', String(bookingYear));
+        updateBookingYearSelection();
+        showListView();
+        return Promise.resolve();
+    }
+
+    pendingBookingYear = bookingYear;
     updateBookingYearSelection();
     return loadFromRemote(year).finally(() => {
         pendingBookingYear = null;
@@ -78,7 +95,7 @@ function loadFromRemote(year) {
             arrayBooking.sort((a, b) => parseItalianDate(a['Check-in']) - parseItalianDate(b['Check-in']));
 
             selectedBookingYear = bookingYear;
-            sessionStorage.setItem('arrayBooking', JSON.stringify(arrayBooking));
+            sessionStorage.setItem(bookingsCacheKey(bookingYear), JSON.stringify(arrayBooking));
             sessionStorage.setItem('arrayBookingYear', String(selectedBookingYear));
 
             if (cache) {
@@ -91,7 +108,12 @@ function loadFromRemote(year) {
         .catch(error => {
             updateBookingYearSelection();
             showListView();
-            console.error('Errore durante il caricamento del file Excel:', error);
+            const message = document.createElement('p');
+            message.className = 'expenses-error';
+            message.setAttribute('role', 'alert');
+            message.textContent = 'Caricamento prenotazioni non riuscito. ' + error.message;
+            document.getElementById('bookingItems').appendChild(message);
+            console.error('Errore durante il caricamento delle prenotazioni:', error);
         })
         .finally(() => {
             listView.setAttribute('aria-busy', 'false');
@@ -135,10 +157,9 @@ function initializeApp() {
     }
 }
 
-function readCachedBookings() {
-    if (sessionStorage.getItem('arrayBookingYear') !== String(selectedBookingYear)) return null;
+function readCachedBookings(year = selectedBookingYear) {
     try {
-        const bookings = JSON.parse(sessionStorage.getItem('arrayBooking'));
+        const bookings = JSON.parse(sessionStorage.getItem(bookingsCacheKey(year)));
         return Array.isArray(bookings) ? bookings : null;
     } catch (error) {
         return null;
@@ -255,7 +276,7 @@ function showGraphicView() {
     document.getElementById('graphicViewBtn').classList.add('active');
 
     // Aggiorna il titolo
-    updateViewHeader(titleWithYear('Profitto'), 'grafico');
+    updateViewHeader('Profitto', 'grafico');
 
     const rendering = renderGraphicView();
   
@@ -274,7 +295,7 @@ async function renderGraphicView() {
     const graphicContainer = document.getElementById('graphicView');
     graphicContainer.innerHTML = ''; // Pulisce il contenitore
     graphicContainer.setAttribute('aria-busy', 'true');
-    if (graphicContainer.classList.contains('active')) updateViewHeader(titleWithYear('Profitto'), 'grafico');
+    if (graphicContainer.classList.contains('active')) updateViewHeader('Profitto', 'grafico');
     
     // Crea l'header con navigazione
     const header = document.createElement('div');
@@ -379,6 +400,13 @@ async function renderGraphicView() {
                     <p class="yearly-amount expense-amount annual-expenses-amount">Caricamento...</p>
                 </div>
             </div>
+            <div class="yearly-revenue yearly-net">
+                <i class="fa fa-money" aria-hidden="true"></i>
+                <div class="yearly-info">
+                    <p class="yearly-label">Netto Annuale ${year}</p>
+                    <p class="yearly-amount annual-net-amount">Caricamento...</p>
+                </div>
+            </div>
         </div>
     `;
 
@@ -400,6 +428,7 @@ async function renderGraphicView() {
             parseItalianDate(expense.Data).getFullYear() === year ? sum + (expense.Importo || 0) : sum, 0);
         statsContainer.querySelector('.monthly-expenses-amount').textContent = formatEuro(monthlyTotal) + ' \u20ac';
         statsContainer.querySelector('.annual-expenses-amount').textContent = formatEuro(annualTotal) + ' \u20ac';
+        statsContainer.querySelector('.annual-net-amount').textContent = formatEuro(yearlyRevenue - annualTotal) + ' \u20ac';
         statsContainer.querySelector('.total-revenue').textContent = formatEuro(totalRevenue - monthlyTotal) + ' \u20ac';
     } catch (error) {
         if (requestId !== graphicRequestId) return;
@@ -408,7 +437,7 @@ async function renderGraphicView() {
             showLoginView(() => showGraphicView());
             return;
         }
-        statsContainer.querySelectorAll('.monthly-expenses-amount, .annual-expenses-amount, .total-revenue')
+        statsContainer.querySelectorAll('.monthly-expenses-amount, .annual-expenses-amount, .annual-net-amount, .total-revenue')
             .forEach(amount => { amount.textContent = 'Non disponibile'; });
         status.textContent = 'Caricamento spese non riuscito. ' + error.message;
         status.hidden = false;
@@ -462,7 +491,12 @@ function calculateYearlyRevenue(year) {
 
 
 function updateViewHeader(title, panel) {
-    document.querySelector('h1').textContent = title;
+    document.querySelector('.page-header h1').textContent = title;
+    const yearLabel = selectedBookingYear === ALL_YEARS ? 'Tutti gli anni' : `Anno ${selectedBookingYear}`;
+    const subtitle = panel === 'calendario' ? `Prenotazioni · ${yearLabel}`
+        : panel === 'grafico' ? `Riepilogo economico · ${yearLabel}`
+        : panel === 'inserisci' ? 'Dati del soggiorno' : yearLabel;
+    document.getElementById('pageSubtitle').textContent = subtitle;
     updateBookingYearSelection();
     document.getElementById('expensesView').classList.toggle('active', panel === 'spese');
     document.getElementById('expensesViewBtn').classList.toggle('active', panel === 'spese' || panel === 'inserisciSpesa');
@@ -738,6 +772,7 @@ async function submitBooking(event) {
 
         status.textContent = 'Prenotazione salvata.';
         if (!updating) form.reset();
+        clearBookingsCache();
         await changeBookingYear(selectedBookingYear === ALL_YEARS ? ALL_YEARS : String(result.year));
     } catch (error) {
         status.textContent = 'Salvataggio non confermato. Verifica il foglio prima di riprovare. ' + error.message;
@@ -789,7 +824,7 @@ function collectBookingData(event) {
 function showInsertExpense() {
     sessionStorage.setItem('lastActivePanel', 'inserisciSpesa');
     document.querySelectorAll('.view, .tabButton').forEach(element => element.classList.remove('active'));
-    updateViewHeader(titleWithYear('Nuova Spesa'), 'inserisciSpesa');
+    updateViewHeader('Nuova Spesa', 'inserisciSpesa');
 
     const container = document.getElementById('insertExpenseView');
     container.innerHTML = `
@@ -915,7 +950,7 @@ async function submitExpense(event) {
             status.textContent = 'Sessione scaduta. Accedi nuovamente e salva la spesa.';
             showLoginView(() => {
                 document.querySelectorAll('.view, .tabButton').forEach(element => element.classList.remove('active'));
-                updateViewHeader(titleWithYear('Nuova Spesa'), 'inserisciSpesa');
+                updateViewHeader('Nuova Spesa', 'inserisciSpesa');
             });
             return;
         }
@@ -988,7 +1023,7 @@ async function showListExpenses() {
     const requestId = ++expensesRequestId;
     sessionStorage.setItem('lastActivePanel', 'spese');
     document.querySelectorAll('.view, .tabButton').forEach(element => element.classList.remove('active'));
-    updateViewHeader(titleWithYear('Spese'), 'spese');
+    updateViewHeader('Spese', 'spese');
 
     const view = document.getElementById('expensesView');
     const items = document.getElementById('expenseItems');
@@ -1061,7 +1096,7 @@ function showListView() {
     document.getElementById('listViewBtn').classList.add('active');
 
     // Aggiorna il titolo
-    updateViewHeader(titleWithYear('Prenotazioni'), 'lista');
+    updateViewHeader('Prenotazioni', 'lista');
  
     // svuota la visualizzazione precedente
     const bookingItems = document.getElementById('bookingItems');
@@ -1120,7 +1155,7 @@ function showCalendarView() {
     document.getElementById('calendarViewBtn').classList.add('active');
 
     // Aggiorna il titolo
-    updateViewHeader(titleWithYear('Disponibilità'), 'calendario');
+    updateViewHeader('Disponibilità', 'calendario');
     
     renderCalendar();
 
@@ -1279,6 +1314,11 @@ function printCard(component, booking) {
             ? booking.Cellulare.trim()
             : typeof booking.Cellulare === 'number' && Number.isFinite(booking.Cellulare)
                 ? String(booking.Cellulare) : '';
+        const checkin = parseItalianDate(booking['Check-in']);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        // Un Check-in non valido non nasconde il menu
+        const isPastBooking = checkin.getTime() > 0 && checkin < today;
         component.innerHTML = `
             <p><strong>${booking.Nominativo}</strong></p>
             <p><i class="fa fa-calendar-o" aria-hidden="true"></i> ${booking['Check-in']} - ${booking['Check-out']}</p>
@@ -1288,7 +1328,7 @@ function printCard(component, booking) {
             <p><i class="fa fa-phone" aria-hidden="true"></i> ${phone ? phone.replace(/\\/g, '+') : ' - '}</p>
             <p><i class="fa fa-sticky-note-o" aria-hidden="true"></i> ${booking.Note && booking.hasOwnProperty("Note") ? booking.Note : ' - '}</p>
             <div class="logo"><img src="./img/${booking.channel}.png" alt="Logo" width="40"></div>
-            <details class="booking-actions">
+            ${isPastBooking ? '' : `<details class="booking-actions">
                 <summary class="booking-actions-toggle" aria-label="Altre azioni" title="Altre azioni">
                     <i class="fa fa-ellipsis-v" aria-hidden="true"></i>
                 </summary>
@@ -1296,7 +1336,7 @@ function printCard(component, booking) {
                     <button type="button" class="edit-action"><i class="fa fa-pencil" aria-hidden="true"></i> Modifica</button>
                     <button type="button" class="delete-action"><i class="fa fa-trash" aria-hidden="true"></i> Elimina</button>
                 </div>
-            </details>
+            </details>`}
             <div class="pay">
                 <span class="lordo" style="display:none;">${booking['Guadagno Lordo'] && booking.hasOwnProperty('Guadagno Lordo') ? formatEuro(booking['Guadagno Lordo']) + ' € /' : ''}</span>
                 <span class="netto" style="display:none;">${booking['Guadagno Netto'] && booking.hasOwnProperty('Guadagno Netto') ? formatEuro(booking['Guadagno Netto']) + ' €' : ''}</span>
@@ -1311,9 +1351,9 @@ function printCard(component, booking) {
             showHidePayDetails();
         });
         const deleteButton = component.querySelector('.delete-action');
-        deleteButton.addEventListener('click', () => deleteBooking(booking, deleteButton));
+        if (deleteButton) deleteButton.addEventListener('click', () => deleteBooking(booking, deleteButton));
         const editButton = component.querySelector('.edit-action');
-        editButton.addEventListener('click', () => showInsertBooking(booking));
+        if (editButton) editButton.addEventListener('click', () => showInsertBooking(booking));
  
 }
 
@@ -1380,7 +1420,9 @@ async function deleteBooking(booking, button) {
 
         arrayBooking = arrayBooking.filter(item => item !== booking);
         try {
-            sessionStorage.setItem('arrayBooking', JSON.stringify(arrayBooking));
+            // Gli altri anni (e "Tutti") possono contenere la prenotazione cancellata o spostata
+            clearBookingsCache();
+            sessionStorage.setItem(bookingsCacheKey(selectedBookingYear), JSON.stringify(arrayBooking));
             sessionStorage.setItem('arrayBookingYear', String(selectedBookingYear));
             if (localStorage.getItem('arrayBookingYear') === String(year)) {
                 localStorage.removeItem('arrayBooking');

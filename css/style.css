@@ -30,10 +30,13 @@ h1 {
   display: flex;
   align-items: center;
   gap: 12px;
+  padding: 16px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .page-title-group {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -43,6 +46,17 @@ h1 {
   overflow-wrap: anywhere;
   margin-top: 0;
   margin-bottom: 0;
+  font-size: 25px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #172b46;
+}
+
+.page-subtitle {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #64748b;
 }
 
 .booking-year-selector {
@@ -85,7 +99,7 @@ h1 {
   }
 
   .page-header h1 {
-    font-size: 32px;
+    font-size: 25px;
   }
 
   .page-header-main {
@@ -117,13 +131,14 @@ h1 {
 #insertBookingBtn,
 #insertExpenseBtn {
   margin-left: auto;
-  background-color: #007bff;
+  border-radius: 14px;
+  background-color: #2563eb;
   color: #fff;
 }
 
 #insertBookingBtn:hover,
 #insertExpenseBtn:hover {
-  background-color: #0056b3;
+  background-color: #1d4ed8;
 }
 
 #backToListBtn,
@@ -262,7 +277,6 @@ h1 {
 }
 
 .login-password-toggle {
-  visibility: hidden;
   position: absolute;
   top: 0;
   right: 0;
@@ -274,10 +288,6 @@ h1 {
   color: #666;
   font-size: 20px;
   cursor: pointer;
-}
-
-.login-password-control:focus-within .login-password-toggle {
-  visibility: visible;
 }
 
 .login-password-toggle:hover {
@@ -1025,6 +1035,12 @@ button.active {
   margin-top: 16px;
   background: linear-gradient(135deg, #bf5700 0%, #c62828 100%);
   color: #fff;
+  box-shadow: none;
+}
+
+.yearly-net {
+  margin-top: 16px;
+  background: linear-gradient(135deg, #2e9b55 0%, #146b3a 100%);
   box-shadow: none;
 }
 
