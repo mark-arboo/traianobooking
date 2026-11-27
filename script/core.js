@@ -299,16 +299,18 @@ async function renderGraphicView() {
     
     // Crea l'header con navigazione
     const header = document.createElement('div');
-    header.className = 'calendar-header';
+    header.className = 'profit-month-nav';
     const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 
                         'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
     header.innerHTML = `
-        <button class="nav-button" onclick="previousMonthGraphic()">◀</button>
+        <button type="button" class="nav-button" onclick="previousMonthGraphic()" aria-label="Mese precedente">
+            <i class="fa fa-angle-left" aria-hidden="true"></i>
+        </button>
         <h2>${monthNames[month]} ${year}</h2>
-        <button class="nav-button" onclick="nextMonthGraphic()">▶</button>
+        <button type="button" class="nav-button" onclick="nextMonthGraphic()" aria-label="Mese successivo">
+            <i class="fa fa-angle-right" aria-hidden="true"></i>
+        </button>
     `;
-    graphicContainer.appendChild(header);
-
     // Contenitore per le statistiche
     const statsContainer = document.createElement('div');
     statsContainer.className = 'stats-container';
@@ -341,75 +343,74 @@ async function renderGraphicView() {
 
     // Calcola il totale mensile
     const totalRevenue = revenueByChannel.booking + revenueByChannel.airbnb + revenueByChannel.black;
+    const showChannelShares = Object.values(revenueByChannel).every(amount => amount >= 0);
 
     // Calcola la revenue annuale
     const yearlyRevenue = calculateYearlyRevenue(year);
 
-    // Crea la visualizzazione con due card separate
     statsContainer.innerHTML = `
-        <div class="stats-card">
-            <div class="revenue-item">
-                <img src="./img/booking.png" alt="Booking" class="channel-logo">
-                <div class="channel-info">
-                    <p class="channel-name">Booking.com</p>
-                    <p class="channel-revenue">${formatEuro(revenueByChannel.booking)} €</p>
+        <section class="stats-card profit-month-card" aria-labelledby="profitMonthTitle">
+            <div class="profit-month-summary">
+                <div class="profit-month-heading">
+                    <h3 id="profitMonthTitle" class="profit-label">Netto del mese</h3>
+                    <p class="booking-count">${bookingsInMonth.length} ${bookingsInMonth.length === 1 ? 'prenotazione' : 'prenotazioni'}</p>
                 </div>
-            </div>
-            <div class="revenue-item">
-                <img src="./img/airbnb.png" alt="Airbnb" class="channel-logo">
-                <div class="channel-info">
-                    <p class="channel-name">Airbnb</p>
-                    <p class="channel-revenue">${formatEuro(revenueByChannel.airbnb)} €</p>
-                </div>
-            </div>
-            <div class="revenue-item">
-                <img src="./img/black.png" alt="Black" class="channel-logo">
-                <div class="channel-info">
-                    <p class="channel-name">Diretto</p>
-                    <p class="channel-revenue">${formatEuro(revenueByChannel.black)} €</p>
-                </div>
-            </div>
-            <div class="revenue-item profit-expenses">
-                <i class="fa fa-credit-card expense-icon" aria-hidden="true"></i>
-                <div class="channel-info">
-                    <p class="channel-name">Spese</p>
-                    <p class="expense-amount monthly-expenses-amount">Caricamento...</p>
-                </div>
-            </div>
-            <div class="revenue-total">
-                <p class="total-label">Totale Mensile:</p>
                 <p class="total-revenue">Caricamento...</p>
+                <p class="profit-month-caption">Guadagni delle prenotazioni meno spese</p>
             </div>
-            <div class="booking-count">
-                <p>Numero prenotazioni: <strong>${bookingsInMonth.length}</strong></p>
-            </div>
-        </div>
-        
-        <div class="stats-card yearly-card">
-            <div class="yearly-revenue">
-                <i class="fa fa-line-chart" aria-hidden="true"></i>
-                <div class="yearly-info">
-                    <p class="yearly-label">Revenue Annuale ${year}</p>
-                    <p class="yearly-amount">${formatEuro(yearlyRevenue)} €</p>
+            <div class="profit-month-totals">
+                <div class="profit-month-income">
+                    <p class="profit-label">Guadagni del mese</p>
+                    <p class="profit-month-amount">${formatEuro(totalRevenue)} €</p>
+                </div>
+                <div class="profit-month-expenses">
+                    <p class="profit-label">Spese del mese</p>
+                    <p class="profit-month-amount monthly-expenses-amount">Caricamento...</p>
                 </div>
             </div>
-            <div class="yearly-revenue yearly-expenses">
-                <i class="fa fa-credit-card" aria-hidden="true"></i>
-                <div class="yearly-info">
-                    <p class="yearly-label">Spese Annuali ${year}</p>
-                    <p class="yearly-amount expense-amount annual-expenses-amount">Caricamento...</p>
-                </div>
+        </section>
+        <section aria-labelledby="profitChannelsTitle">
+            <h3 id="profitChannelsTitle" class="profit-section-title">Guadagni per canale</h3>
+            <div class="stats-card profit-channels">
+                ${[['booking', 'Booking.com'], ['airbnb', 'Airbnb'], ['black', 'Diretto']].map(([channel, label]) => `
+                    <div class="revenue-item profit-channel-${channel}">
+                        <div class="channel-info">
+                            <p class="channel-name">${label}</p>
+                            <p class="channel-revenue">${formatEuro(revenueByChannel[channel])} €</p>
+                        </div>
+                        ${showChannelShares ? `
+                            <div class="profit-channel-track" aria-hidden="true">
+                                <span style="width: ${totalRevenue > 0 ? revenueByChannel[channel] / totalRevenue * 100 : 0}%"></span>
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('')}
             </div>
-            <div class="yearly-revenue yearly-net">
-                <i class="fa fa-money" aria-hidden="true"></i>
-                <div class="yearly-info">
-                    <p class="yearly-label">Netto Annuale ${year}</p>
+        </section>
+        <section aria-labelledby="profitYearTitle">
+            <h3 id="profitYearTitle" class="profit-section-title">Il tuo anno <span>${year}</span></h3>
+            <div class="stats-card yearly-card">
+                <div class="yearly-revenue yearly-net">
+                    <i class="fa fa-bar-chart" aria-hidden="true"></i>
+                    <p class="yearly-label">Netto annuale</p>
                     <p class="yearly-amount annual-net-amount">Caricamento...</p>
                 </div>
+                <div class="profit-year-totals">
+                    <div class="yearly-revenue">
+                        <p class="yearly-label">Guadagni annuali</p>
+                        <p class="yearly-amount">${formatEuro(yearlyRevenue)} €</p>
+                    </div>
+                    <div class="yearly-revenue yearly-expenses">
+                        <p class="yearly-label">Spese annuali</p>
+                        <p class="yearly-amount annual-expenses-amount">Caricamento...</p>
+                    </div>
+                </div>
             </div>
-        </div>
+        </section>
+        <p class="profit-footnote">Guadagni attribuiti al mese di check-in.</p>
     `;
 
+    statsContainer.querySelector('.profit-month-card').prepend(header);
     graphicContainer.appendChild(statsContainer);
     const status = document.createElement('p');
     status.className = 'expenses-status expenses-error';
@@ -527,58 +528,89 @@ function showInsertBooking(booking = null) {
     const container = document.getElementById('insertBookingView');
     container.innerHTML = `
         <form id="bookingForm" class="booking-form">
-            <div class="booking-field">
+            <p class="booking-form-caption">I campi con * sono obbligatori</p>
+            <div class="booking-form-card booking-field">
                 <label for="bookingChannel">Canale</label>
-                <select id="bookingChannel" name="channel" required>
-                    <option value="Booking.com">Booking.com</option>
-                    <option value="Airbnb">Airbnb</option>
-                    <option value="Black">Black</option>
-                </select>
+                <div class="booking-channel-control">
+                    <img class="booking-channel-logo" src="./img/booking.png" alt="">
+                    <select id="bookingChannel" name="channel" required>
+                        <option value="Booking.com">Booking.com</option>
+                        <option value="Airbnb">Airbnb</option>
+                        <option value="Black">Black</option>
+                    </select>
+                </div>
             </div>
-            <div class="booking-field">
-                <label for="bookingName">Nominativo</label>
-                <input id="bookingName" name="Nominativo" type="text" autocomplete="name" required>
-            </div>
-            <div class="booking-field booking-field-wide">
-                <label for="bookingPhone">Cellulare</label>
-                <input id="bookingPhone" name="Cellulare" type="tel" autocomplete="tel" title="Sono ammessi solo numeri, spazi e il carattere +">
-            </div>
-            <div class="booking-field">
-                <label for="bookingCheckin">Check-in (gg/mm/aaaa)</label>
-                <input id="bookingCheckin" name="Check-in" type="text" inputmode="numeric" placeholder="gg/mm/aaaa" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" maxlength="10" required>
-            </div>
-            <div class="booking-field">
-                <label for="bookingCheckout">Check-out (gg/mm/aaaa)</label>
-                <input id="bookingCheckout" name="Check-out" type="text" inputmode="numeric" placeholder="gg/mm/aaaa" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" maxlength="10" required>
-            </div>
-            <div class="booking-field">
-                <label for="bookingGuests">Numero ospiti</label>
-                <input id="bookingGuests" name="Numero Ospiti" type="text" required>
-            </div>
-            <div id="bookingTaxGuestsField" class="booking-field">
-                <label for="bookingTaxGuests">Ospiti soggetti a tassa di soggiorno</label>
-                <input id="bookingTaxGuests" name="Ospiti soggetti a tassa di soggiorno" type="number" inputmode="numeric" min="0" step="1" required>
-            </div>
-            <div class="booking-field booking-field-wide">
-                <label for="bookingGross">Guadagno Lordo (euro)</label>
-                <input id="bookingGross" name="Guadagno Lordo" type="number" inputmode="decimal" min="0" step="0.01" required>
-            </div>
-            <div id="bookingCleaningField" class="booking-field booking-field-wide">
-                <label for="bookingCleaning">Costi di pulizia (euro)</label>
-                <input id="bookingCleaning" name="Costi di pulizia" type="number" inputmode="decimal" min="0" step="0.01" value="0" required>
-            </div>
-            <div class="booking-field booking-field-wide">
-                <label for="bookingNotes">Note</label>
-                <textarea id="bookingNotes" name="Note" rows="4"></textarea>
-            </div>
-            <button type="submit" class="booking-submit booking-field-wide">
+            <section class="booking-form-section" aria-labelledby="bookingGuestTitle">
+                <h2 id="bookingGuestTitle">Ospite</h2>
+                <div class="booking-form-card">
+                    <div class="booking-field">
+                        <label for="bookingName">Nominativo</label>
+                        <input id="bookingName" name="Nominativo" type="text" autocomplete="name" required>
+                    </div>
+                    <div class="booking-field">
+                        <label for="bookingPhone">Cellulare <span class="booking-optional">Facoltativo</span></label>
+                        <input id="bookingPhone" name="Cellulare" type="tel" autocomplete="tel" placeholder="Numero di telefono" title="Sono ammessi solo numeri, spazi e il carattere +">
+                    </div>
+                    <div class="booking-field">
+                        <label for="bookingGuests">Numero ospiti</label>
+                        <input id="bookingGuests" name="Numero Ospiti" type="text" aria-describedby="bookingGuestsHint" required>
+                        <p id="bookingGuestsHint" class="booking-field-hint">Puoi indicare anche adulti e bambini.</p>
+                    </div>
+                </div>
+            </section>
+            <section class="booking-form-section" aria-labelledby="bookingStayTitle">
+                <h2 id="bookingStayTitle">Soggiorno</h2>
+                <div class="booking-form-card">
+                    <div class="booking-form-pair">
+                        <div class="booking-field">
+                            <label for="bookingCheckin">Check-in</label>
+                            <input id="bookingCheckin" name="Check-in" type="text" inputmode="numeric" placeholder="gg/mm/aaaa" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" maxlength="10" required>
+                        </div>
+                        <div class="booking-field">
+                            <label for="bookingCheckout">Check-out</label>
+                            <input id="bookingCheckout" name="Check-out" type="text" inputmode="numeric" placeholder="gg/mm/aaaa" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" maxlength="10" required>
+                        </div>
+                    </div>
+                    <div id="bookingTaxGuestsField" class="booking-field">
+                        <label for="bookingTaxGuests">Ospiti soggetti a tassa di soggiorno</label>
+                        <input id="bookingTaxGuests" name="Ospiti soggetti a tassa di soggiorno" type="number" inputmode="numeric" min="0" step="1" required>
+                    </div>
+                </div>
+            </section>
+            <section class="booking-form-section" aria-labelledby="bookingAmountsTitle">
+                <h2 id="bookingAmountsTitle">Importi</h2>
+                <div class="booking-form-card booking-form-pair">
+                    <div class="booking-field">
+                        <label for="bookingGross">Guadagno lordo</label>
+                        <div class="booking-money-control">
+                            <input id="bookingGross" name="Guadagno Lordo" type="number" inputmode="decimal" min="0" step="0.01" aria-label="Guadagno lordo in euro" required>
+                            <span aria-hidden="true">€</span>
+                        </div>
+                    </div>
+                    <div id="bookingCleaningField" class="booking-field">
+                        <label for="bookingCleaning">Costi di pulizia</label>
+                        <div class="booking-money-control">
+                            <input id="bookingCleaning" name="Costi di pulizia" type="number" inputmode="decimal" min="0" step="0.01" value="0" aria-label="Costi di pulizia in euro" required>
+                            <span aria-hidden="true">€</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <section class="booking-form-section" aria-labelledby="bookingNotesTitle">
+                <h2 id="bookingNotesTitle"><label for="bookingNotes">Note</label> <span class="booking-optional">Facoltative</span></h2>
+                <div class="booking-form-card booking-field">
+                    <textarea id="bookingNotes" name="Note" rows="3"></textarea>
+                </div>
+            </section>
+            <button type="submit" class="booking-submit">
                 Inserisci prenotazione
             </button>
-            <p id="bookingSaveStatus" class="booking-field-wide" role="status" hidden></p>
+            <p id="bookingSaveStatus" role="status" hidden></p>
         </form>
     `;
 
     const form = document.getElementById('bookingForm');
+    initializeFormFieldErrors(form);
     form.dataset.action = booking ? 'modificaPrenotazione' : 'savePrenotazione';
     if (booking) {
         form.dataset.id = String(booking.ID ?? '');
@@ -615,8 +647,7 @@ function showInsertBooking(booking = null) {
         if (event.target.id === 'bookingCheckin' || event.target.id === 'bookingCheckout') {
             formatBookingDateInput(event.target);
         }
-        event.target.setCustomValidity('');
-        event.target.removeAttribute('aria-invalid');
+        clearBookingFieldError(event.target);
     });
     form.addEventListener('invalid', event => {
         event.target.dataset.touched = 'true';
@@ -638,7 +669,11 @@ function formatBookingDateInput(input) {
 }
 
 function updateBookingChannelFields(form) {
-    const showField = form.elements.namedItem('channel').value !== 'Black';
+    const channel = form.elements.namedItem('channel').value;
+    const logo = form.querySelector('.booking-channel-logo');
+    logo.hidden = !channel;
+    if (channel) logo.src = './img/' + (channel === 'Booking.com' ? 'booking' : channel.toLowerCase()) + '.png';
+    const showField = channel !== 'Black';
     [['bookingTaxGuestsField', 'Ospiti soggetti a tassa di soggiorno'], ['bookingCleaningField', 'Costi di pulizia']]
         .forEach(([containerId, name]) => {
             const field = form.elements.namedItem(name);
@@ -646,17 +681,44 @@ function updateBookingChannelFields(form) {
             field.disabled = !showField;
             field.required = showField;
             if (!showField) {
-                field.setCustomValidity('');
-                field.removeAttribute('aria-invalid');
+                clearBookingFieldError(field);
                 delete field.dataset.touched;
             }
         });
 }
 
+function initializeFormFieldErrors(form) {
+    form.querySelectorAll('input, select, textarea').forEach(field => {
+        const error = document.createElement('p');
+        error.id = field.id + 'Error';
+        error.className = 'booking-field-error';
+        error.hidden = true;
+        field.closest('.booking-field').appendChild(error);
+        field.setAttribute('aria-describedby', [field.getAttribute('aria-describedby'), error.id].filter(Boolean).join(' '));
+    });
+}
+
+function clearBookingFieldError(field) {
+    field.setCustomValidity('');
+    field.removeAttribute('aria-invalid');
+    const error = document.getElementById(field.id + 'Error');
+    if (error) {
+        error.textContent = '';
+        error.hidden = true;
+    }
+}
+
 function updateBookingFieldError(field) {
     const invalid = !field.validity.valid;
     field.setAttribute('aria-invalid', String(invalid));
-    if (!invalid) return;
+    const error = document.getElementById(field.id + 'Error');
+    if (!invalid) {
+        if (error) {
+            error.textContent = '';
+            error.hidden = true;
+        }
+        return;
+    }
 
     const formatHints = {
         channel: 'Scegli un canale tra Booking.com, Airbnb e Black.',
@@ -679,6 +741,10 @@ function updateBookingFieldError(field) {
         : field.validity.customError
             ? field.validationMessage : formatHints[field.name] || field.validationMessage;
     field.setCustomValidity(message);
+    if (error) {
+        error.textContent = message;
+        error.hidden = false;
+    }
 }
 
 function validateBookingForm(form) {
@@ -829,41 +895,56 @@ function showInsertExpense() {
     const container = document.getElementById('insertExpenseView');
     container.innerHTML = `
         <form id="expenseForm" class="booking-form">
-            <div class="booking-field">
-                <label for="expenseDate">Data (gg/mm/aaaa)</label>
-                <input id="expenseDate" name="data" type="text" inputmode="numeric" placeholder="gg/mm/aaaa" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" maxlength="10" required>
-            </div>
-            <div class="booking-field">
-                <label for="expenseCategory">Categoria</label>
-                <select id="expenseCategory" name="categoria" required>
-                    <option value="">Seleziona una categoria</option>
-                    <option>Pulizia e lavanderia</option>
-                    <option>Utenze e consumi</option>
-                    <option>Manutenzione e riparazioni</option>
-                    <option>Materiale di consumo e cortesia</option>
-                    <option>Arredamento e dotazioni</option>
-                    <option>Assicurazione e sicurezza</option>
-                    <option>Lavori e investimenti</option>
-                    <option>Spese straordinarie e varie</option>
-                </select>
-            </div>
-            <div class="booking-field booking-field-wide">
-                <label for="expenseDescription">Descrizione</label>
-                <input id="expenseDescription" name="descrizione" type="text" required>
-            </div>
-            <div class="booking-field booking-field-wide">
-                <label for="expenseAmount">Importo (euro)</label>
-                <input id="expenseAmount" name="importo" type="text" inputmode="decimal" placeholder="0,00" pattern="[0-9]+([.,][0-9]{1,2})?" required>
-            </div>
-            <div class="booking-field booking-field-wide">
-                <label for="expenseNotes">Note</label>
-                <textarea id="expenseNotes" name="note" rows="4"></textarea>
-            </div>
-            <button type="submit" class="booking-submit booking-field-wide">Inserisci spesa</button>
-            <p id="expenseSaveStatus" class="booking-field-wide" role="status" hidden></p>
+            <p class="booking-form-caption">I campi con * sono obbligatori</p>
+            <section class="booking-form-section" aria-labelledby="expenseDetailsTitle">
+                <h2 id="expenseDetailsTitle">Dettagli della spesa</h2>
+                <div class="booking-form-card">
+                    <div class="booking-field">
+                        <label for="expenseDate">Data</label>
+                        <input id="expenseDate" name="data" type="text" inputmode="numeric" placeholder="gg/mm/aaaa" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" maxlength="10" required>
+                    </div>
+                    <div class="booking-field">
+                        <label for="expenseCategory">Categoria</label>
+                        <select id="expenseCategory" name="categoria" required>
+                            <option value="">Seleziona una categoria</option>
+                            <option>Pulizia e lavanderia</option>
+                            <option>Utenze e consumi</option>
+                            <option>Manutenzione e riparazioni</option>
+                            <option>Materiale di consumo e cortesia</option>
+                            <option>Arredamento e dotazioni</option>
+                            <option>Assicurazione e sicurezza</option>
+                            <option>Lavori e investimenti</option>
+                            <option>Spese straordinarie e varie</option>
+                        </select>
+                    </div>
+                    <div class="booking-field">
+                        <label for="expenseDescription">Descrizione</label>
+                        <input id="expenseDescription" name="descrizione" type="text" required>
+                    </div>
+                </div>
+            </section>
+            <section class="booking-form-section" aria-labelledby="expenseAmountTitle">
+                <h2 id="expenseAmountTitle">Importo</h2>
+                <div class="booking-form-card booking-field">
+                    <label for="expenseAmount">Totale spesa</label>
+                    <div class="booking-money-control">
+                        <input id="expenseAmount" name="importo" type="text" inputmode="decimal" placeholder="0,00" pattern="[0-9]+([.,][0-9]{1,2})?" aria-label="Totale spesa in euro" required>
+                        <span aria-hidden="true">€</span>
+                    </div>
+                </div>
+            </section>
+            <section class="booking-form-section" aria-labelledby="expenseNotesTitle">
+                <h2 id="expenseNotesTitle"><label for="expenseNotes">Note</label> <span class="booking-optional">Facoltative</span></h2>
+                <div class="booking-form-card booking-field">
+                    <textarea id="expenseNotes" name="note" rows="3"></textarea>
+                </div>
+            </section>
+            <button type="submit" class="booking-submit">Inserisci spesa</button>
+            <p id="expenseSaveStatus" role="status" hidden></p>
         </form>
     `;
     const form = document.getElementById('expenseForm');
+    initializeFormFieldErrors(form);
     form.dataset.year = String(selectedBookingYear);
     const today = new Date();
     form.elements.namedItem('data').value =
@@ -878,8 +959,7 @@ function showInsertExpense() {
     form.addEventListener('input', event => {
         if (!event.target.matches('input, select, textarea')) return;
         if (event.target.name === 'data') formatBookingDateInput(event.target);
-        event.target.setCustomValidity('');
-        event.target.removeAttribute('aria-invalid');
+        clearBookingFieldError(event.target);
     });
     form.addEventListener('invalid', event => {
         event.target.dataset.touched = 'true';
@@ -1041,25 +1121,70 @@ async function showListExpenses() {
         view.setAttribute('aria-busy', String(!loading.hidden));
         const expenses = await loadExpenses(year);
         if (requestId !== expensesRequestId) return;
+        const monthFormatter = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeric' });
+        const dateFormatter = new Intl.DateTimeFormat('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+        const groups = new Map();
+        let total = 0;
         expenses.forEach(expense => {
-            const card = document.createElement('article');
-            card.className = 'expense-item';
-            card.innerHTML = `
-                <div class="expense-heading">
-                    <strong class="expense-category"></strong>
-                    <span class="expense-amount"></span>
-                </div>
-                <p class="expense-date"><i class="fa fa-calendar-o" aria-hidden="true"></i> <span></span></p>
-                <p class="expense-description"><i class="fa fa-file-text-o" aria-hidden="true"></i> <span></span></p>
-                <p class="expense-note"><i class="fa fa-sticky-note-o" aria-hidden="true"></i> <span></span></p>
-            `;
-            card.querySelector('.expense-category').textContent = expense.Categoria || 'Senza categoria';
-            card.querySelector('.expense-amount').textContent = expense.Importo === '' || expense.Importo == null
-                ? '-' : formatEuro(expense.Importo) + ' \u20ac';
-            card.querySelector('.expense-date span').textContent = expense.Data || '-';
-            card.querySelector('.expense-description span').textContent = expense.Descrizione || '-';
-            card.querySelector('.expense-note span').textContent = expense.Note || '-';
-            items.appendChild(card);
+            const date = parseItalianDate(expense.Data);
+            const parts = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(expense.Data ?? '');
+            if (!parts || date.getDate() !== Number(parts[1]) ||
+                date.getMonth() + 1 !== Number(parts[2]) || date.getFullYear() !== Number(parts[3])) {
+                throw new Error('Data spesa non valida: ' + String(expense.Data ?? ''));
+            }
+            const key = `${date.getFullYear()}-${date.getMonth()}`;
+            if (!groups.has(key)) groups.set(key, { date, total: 0, entries: [] });
+            const group = groups.get(key);
+            group.total += expense.Importo || 0;
+            group.entries.push({ expense, date });
+            total += expense.Importo || 0;
+        });
+
+        const summary = document.createElement('section');
+        summary.className = 'expenses-summary';
+        summary.setAttribute('aria-label', 'Riepilogo spese');
+        summary.innerHTML = `
+            <p class="expenses-summary-label">Totale spese</p>
+            <p class="expenses-summary-amount">${formatEuro(total)} \u20ac</p>
+            <p class="expenses-summary-caption"></p>
+            <i class="fa fa-credit-card" aria-hidden="true"></i>
+        `;
+        summary.querySelector('.expenses-summary-caption').textContent =
+            `${expenses.length} ${expenses.length === 1 ? 'spesa registrata' : 'spese registrate'} · ` +
+            (year === ALL_YEARS ? 'Tutti gli anni' : `Anno ${year}`);
+        items.appendChild(summary);
+
+        groups.forEach(group => {
+            const section = document.createElement('section');
+            section.className = 'expenses-month';
+            const heading = document.createElement('div');
+            heading.className = 'expenses-month-heading';
+            heading.innerHTML = '<h2></h2><p></p>';
+            heading.querySelector('h2').textContent = monthFormatter.format(group.date);
+            heading.querySelector('p').textContent = formatEuro(group.total) + ' \u20ac';
+            section.appendChild(heading);
+            group.entries.forEach(({ expense, date }) => {
+                const note = String(expense.Note ?? '').trim();
+                const card = document.createElement('article');
+                card.className = 'expense-item';
+                card.innerHTML = `
+                    <div class="expense-heading">
+                        <strong class="expense-category"></strong>
+                        <span class="expense-amount"></span>
+                    </div>
+                    <p class="expense-description"></p>
+                    <p class="expense-date"><i class="fa fa-calendar-o" aria-hidden="true"></i> <span></span></p>
+                    ${note ? '<p class="expense-note"><i class="fa fa-sticky-note-o" aria-hidden="true"></i> <span></span></p>' : ''}
+                `;
+                card.querySelector('.expense-category').textContent = expense.Categoria || 'Senza categoria';
+                card.querySelector('.expense-amount').textContent = expense.Importo === '' || expense.Importo == null
+                    ? '-' : formatEuro(expense.Importo) + ' \u20ac';
+                card.querySelector('.expense-description').textContent = expense.Descrizione || '-';
+                card.querySelector('.expense-date span').textContent = dateFormatter.format(date);
+                if (note) card.querySelector('.expense-note span').textContent = note;
+                section.appendChild(card);
+            });
+            items.appendChild(section);
         });
         if (!expenses.length) {
             status.textContent = year === ALL_YEARS ? 'Nessuna spesa.' : 'Nessuna spesa per il ' + year + '.';
@@ -1113,11 +1238,11 @@ function showListView() {
     });
 
     // visualizza una div per ogni prenotazione con i campi Nominativo, Check-in, Check-out, Notti, Numero Ospiti
-    filteredBookings.forEach(booking => {
+    filteredBookings.forEach((booking, index) => {
         const bookingDiv = document.createElement('div');
         bookingDiv.classList.add('booking-item');
            
-        printCard(bookingDiv, booking);
+        printCard(bookingDiv, booking, index === 0);
  
         bookingItems.appendChild(bookingDiv);
     });
@@ -1135,7 +1260,7 @@ function filterBookings(input) {
     const filter = input.value.toLowerCase();
     const bookingItems = document.querySelectorAll('.booking-item');
     bookingItems.forEach(item => {
-        const nominativo = item.querySelector('p strong').textContent.toLowerCase();
+        const nominativo = item.querySelector('.booking-name').textContent.toLowerCase();
         if (nominativo.includes(filter)) {
             item.style.display = '';
         } else {
@@ -1169,19 +1294,22 @@ function showCalendarView() {
 
 function renderCalendar() {
     const calendarContainer = document.getElementById('calendarView');
-    calendarContainer.innerHTML = ''; // Pulisce il contenitore
-    
-    // Crea l'header del calendario con navigazione
+    calendarContainer.replaceChildren();
+    const hasYearData = selectedBookingYear === ALL_YEARS || currentYear === selectedBookingYear;
+    const surface = document.createElement('div');
+    surface.className = 'calendar-surface';
+    calendarContainer.appendChild(surface);
+
     const header = document.createElement('div');
     header.className = 'calendar-header';
     const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 
                         'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
     header.innerHTML = `
-        <button class="nav-button" onclick="previousMonth()">◀</button>
+        <button type="button" class="nav-button" onclick="previousMonth()" aria-label="Mese precedente"><i class="fa fa-angle-left" aria-hidden="true"></i></button>
         <h2>${monthNames[currentMonth]} ${currentYear}</h2>
-        <button class="nav-button" onclick="nextMonth()">▶</button>
+        <button type="button" class="nav-button" onclick="nextMonth()" aria-label="Mese successivo"><i class="fa fa-angle-right" aria-hidden="true"></i></button>
     `;
-    calendarContainer.appendChild(header);
+    surface.appendChild(header);
 
     // Crea la griglia del calendario
     const calendarGrid = document.createElement('div');
@@ -1215,7 +1343,8 @@ function renderCalendar() {
 
     // Crea le celle per ogni giorno del mese
     for (let day = 1; day <= daysInMonth; day++) {
-        const dayCell = document.createElement('div');
+        const dayCell = document.createElement('button');
+        dayCell.type = 'button';
         dayCell.className = 'calendar-day';
         
         const currentDate = new Date(currentYear, currentMonth, day);
@@ -1227,37 +1356,50 @@ function renderCalendar() {
             currentDate.getMonth() === today.getMonth() && 
             currentDate.getFullYear() === today.getFullYear()) {
             dayCell.classList.add('today');
+            dayCell.setAttribute('aria-current', 'date');
         }
-        
-        // Determina lo stato del giorno
-        const bookingsForDay = getBookingsForDate(currentDate, dateString);
-        const hasCheckOut = hasCheckOutOnDate(currentDate, dateString);
-        
-        if (hasCheckOut && bookingsForDay.length > 0) {
-            // Checkout + prenotazione attiva = gradiente arancione-rosso
+
+        const bookingsForDay = hasYearData ? getBookingsForDate(currentDate) : [];
+        const departures = hasYearData ? getCheckOutBookingsForDate(currentDate) : [];
+        const hasCheckIn = bookingsForDay.some(booking =>
+            parseItalianDate(booking['Check-in']).getTime() === currentDate.getTime());
+        let state;
+        if (!hasYearData) {
+            dayCell.classList.add('unavailable');
+            dayCell.disabled = true;
+            state = 'Dati non caricati';
+        } else if (departures.length && hasCheckIn) {
             dayCell.classList.add('checkout-occupied');
-        } else if (hasCheckOut && bookingsForDay.length === 0) {
-            // Checkout + nessuna prenotazione = gradiente arancione-verde
+            state = 'Check-out e check-in';
+        } else if (departures.length) {
             dayCell.classList.add('checkout-free');
+            state = 'Check-out';
         } else if (bookingsForDay.length > 0) {
-            // Solo prenotazione attiva = rosso normale
             dayCell.classList.add('occupied');
+            state = 'Occupato';
         } else {
-            // Giorno libero = verde normale
             dayCell.classList.add('free');
+            state = 'Libero';
         }
-        
-        dayCell.innerHTML = `
-            <div class="day-number">${day}</div>
-        `;
-        
-        // Aggiungi event listener per il click
+
+        dayCell.dataset.date = dateString;
+        dayCell.setAttribute('aria-label', `${dateString}: ${state}`);
+        dayCell.setAttribute('aria-pressed', 'false');
+        dayCell.innerHTML = `<span class="day-number">${day}</span>`;
         dayCell.addEventListener('click', () => showDayDetails(dateString, bookingsForDay));
         
         calendarGrid.appendChild(dayCell);
     }
 
-    calendarContainer.appendChild(calendarGrid);
+    surface.appendChild(calendarGrid);
+
+    if (!hasYearData) {
+        const message = document.createElement('p');
+        message.className = 'calendar-data-status';
+        message.setAttribute('role', 'status');
+        message.textContent = 'Dati non caricati per questo anno.';
+        surface.appendChild(message);
+    }
 
     // Aggiungi la sezione per i dettagli del giorno
     const detailsSection = document.createElement('div');
@@ -1266,7 +1408,7 @@ function renderCalendar() {
     calendarContainer.appendChild(detailsSection);
 }
 
-function getBookingsForDate(date, dateString) {
+function getBookingsForDate(date) {
     return arrayBooking.filter(booking => {
         const checkin = parseItalianDate(booking['Check-in']);
         const checkout = parseItalianDate(booking['Check-out']);
@@ -1276,8 +1418,8 @@ function getBookingsForDate(date, dateString) {
     });
 }
 
-function hasCheckOutOnDate(date, dateString) {
-    return arrayBooking.some(booking => {
+function getCheckOutBookingsForDate(date) {
+    return arrayBooking.filter(booking => {
         const checkout = parseItalianDate(booking['Check-out']);
         return date.getTime() === checkout.getTime();
     });
@@ -1285,22 +1427,46 @@ function hasCheckOutOnDate(date, dateString) {
 
 function showDayDetails(dateString, bookings) {
     const detailsContainer = document.getElementById('day-details');
-    
-    if (bookings.length === 0) {
-        detailsContainer.innerHTML = `<p class="no-bookings">Nessuna prenotazione per il ${dateString}</p>`;
-        // Scroll al div dei dettagli
-        detailsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        return;
-    }
-    
-    detailsContainer.innerHTML = `<h3>Prenotazioni per il ${dateString}</h3>`;
-    
-    bookings.forEach(booking => {
+    const date = parseItalianDate(dateString);
+    const departures = getCheckOutBookingsForDate(date);
+    const arrivals = bookings.filter(booking =>
+        parseItalianDate(booking['Check-in']).getTime() === date.getTime());
+    document.querySelectorAll('#calendarView .calendar-day[data-date]').forEach(day => {
+        const selected = day.dataset.date === dateString;
+        day.classList.toggle('selected', selected);
+        day.setAttribute('aria-pressed', String(selected));
+    });
+
+    detailsContainer.replaceChildren();
+    const title = document.createElement('h3');
+    title.textContent = new Intl.DateTimeFormat('it-IT', {
+        weekday: 'long', day: 'numeric', month: 'long'
+    }).format(date);
+    detailsContainer.appendChild(title);
+    const counts = [];
+    if (arrivals.length) counts.push(`${arrivals.length} ${arrivals.length === 1 ? 'arrivo' : 'arrivi'}`);
+    const staying = bookings.length - arrivals.length;
+    if (staying) counts.push(`${staying} in soggiorno`);
+    if (departures.length) counts.push(`${departures.length} ${departures.length === 1 ? 'partenza' : 'partenze'}`);
+    const description = document.createElement('p');
+    description.className = 'calendar-day-summary';
+    description.textContent = counts.length ? counts.join(' · ') : 'Nessuna prenotazione per questo giorno.';
+    detailsContainer.appendChild(description);
+
+    [...bookings, ...departures].forEach(booking => {
         const bookingCard = document.createElement('div');
         bookingCard.className = 'booking-card';
-        
-        printCard(bookingCard, booking);
-
+        printCard(bookingCard, booking, false);
+        const departure = departures.includes(booking);
+        const arrival = arrivals.includes(booking);
+        const badge = document.createElement('span');
+        badge.className = 'booking-stay-status ' + (departure ? 'departure' : arrival ? 'arrival' : 'staying');
+        badge.textContent = departure ? 'In partenza' : arrival ? 'In arrivo' : 'In soggiorno';
+        const channel = bookingCard.querySelector('.booking-channel');
+        const badges = document.createElement('span');
+        badges.className = 'booking-channel-row';
+        channel.replaceWith(badges);
+        badges.append(channel, badge);
         detailsContainer.appendChild(bookingCard);
     });
     
@@ -1308,27 +1474,54 @@ function showDayDetails(dateString, bookings) {
     detailsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function printCard(component, booking) {
+function printCard(component, booking, expanded = true) {
     const guests = booking['Numero Ospiti'] == null ? '' : String(booking['Numero Ospiti']).trim();
-        const phone = typeof booking.Cellulare === 'string'
-            ? booking.Cellulare.trim()
-            : typeof booking.Cellulare === 'number' && Number.isFinite(booking.Cellulare)
-                ? String(booking.Cellulare) : '';
-        const checkin = parseItalianDate(booking['Check-in']);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        // Un Check-in non valido non nasconde il menu
-        const isPastBooking = checkin.getTime() > 0 && checkin < today;
-        component.innerHTML = `
-            <p><strong>${booking.Nominativo}</strong></p>
-            <p><i class="fa fa-calendar-o" aria-hidden="true"></i> ${booking['Check-in']} - ${booking['Check-out']}</p>
-            <p><i class="fa fa-moon-o" aria-hidden="true"></i> ${bookingNights(booking)} Notti</p>
-            <p><i class="fa fa-user-o" aria-hidden="true"></i> ${guests || '-'} ${guests.length === 1 ? 'Ospiti' : ''}</p>
-            <p><i class="fa fa-percent" aria-hidden="true"></i> ${booking['Tassa di soggiorno'] && booking.hasOwnProperty('Tassa di soggiorno') ? formatEuro(booking['Tassa di soggiorno']) + ' € Tassa di soggiorno' : 'No Tax'}</p>
-            <p><i class="fa fa-phone" aria-hidden="true"></i> ${phone ? phone.replace(/\\/g, '+') : ' - '}</p>
-            <p><i class="fa fa-sticky-note-o" aria-hidden="true"></i> ${booking.Note && booking.hasOwnProperty("Note") ? booking.Note : ' - '}</p>
-            <div class="logo"><img src="./img/${booking.channel}.png" alt="Logo" width="40"></div>
-            ${isPastBooking ? '' : `<details class="booking-actions">
+    const phone = typeof booking.Cellulare === 'string'
+        ? booking.Cellulare.trim().replace(/\\/g, '+')
+        : typeof booking.Cellulare === 'number' && Number.isFinite(booking.Cellulare)
+            ? String(booking.Cellulare) : '';
+    const checkin = parseItalianDate(booking['Check-in']);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const isPastBooking = checkin.getTime() > 0 && checkin < today;
+    const channels = { booking: 'Booking.com', airbnb: 'Airbnb', black: 'Diretto · Black' };
+    const channel = Object.prototype.hasOwnProperty.call(channels, booking.channel) ? booking.channel : 'unknown';
+    const note = String(booking.Note ?? '').trim();
+    component.classList.add('booking-summary-card');
+    component.dataset.channel = channel;
+    component.classList.toggle('booking-past', isPastBooking);
+    component.innerHTML = `
+        <details class="booking-disclosure" ${expanded ? 'open' : ''}>
+            <summary class="booking-overview">
+                <span class="booking-name"></span>
+                <i class="fa fa-angle-down booking-chevron" aria-hidden="true"></i>
+                <span class="booking-channel"></span>
+                <span class="booking-dates">
+                    <span><span class="booking-date-label">Check-in</span><span class="booking-checkin"></span></span>
+                    <span class="booking-date-arrow" aria-hidden="true">→</span>
+                    <span><span class="booking-date-label">Check-out</span><span class="booking-checkout"></span></span>
+                    <span class="booking-nights"><i class="fa fa-moon-o" aria-hidden="true"></i> ${bookingNights(booking)} notti</span>
+                </span>
+            </summary>
+            <div class="booking-expanded">
+                <p class="booking-guests-label">Ospiti</p>
+                <p class="booking-guests"></p>
+                ${phone ? '<p class="booking-contact"><i class="fa fa-phone" aria-hidden="true"></i> <a></a></p>' : ''}
+                ${note ? `<details class="booking-notes">
+                    <summary><i class="fa fa-sticky-note-o" aria-hidden="true"></i> <span class="booking-note-preview"></span><span class="booking-note-heading">Note</span><i class="fa fa-angle-down" aria-hidden="true"></i></summary>
+                    <p></p>
+                </details>` : ''}
+                <p class="booking-tax"><span>Tassa di soggiorno</span><span class="booking-tax-amount"></span></p>
+                <div class="booking-footer">
+                    <button type="button" class="pay" aria-label="Mostra importi" aria-pressed="false">
+                        <span class="booking-amount-column"><span class="booking-amount-label">Lordo</span>
+                            <span class="lordo" style="display:none;"></span><span class="noLordo">•••• €</span>
+                        </span>
+                        <span class="booking-amount-column"><span class="booking-amount-label">Netto</span>
+                            <span class="netto" style="display:none;"></span><span class="noNetto">•••• €</span>
+                        </span>
+                    </button>
+                    ${isPastBooking ? '' : `<details class="booking-actions">
                 <summary class="booking-actions-toggle" aria-label="Altre azioni" title="Altre azioni">
                     <i class="fa fa-ellipsis-v" aria-hidden="true"></i>
                 </summary>
@@ -1336,25 +1529,40 @@ function printCard(component, booking) {
                     <button type="button" class="edit-action"><i class="fa fa-pencil" aria-hidden="true"></i> Modifica</button>
                     <button type="button" class="delete-action"><i class="fa fa-trash" aria-hidden="true"></i> Elimina</button>
                 </div>
-            </details>`}
-            <div class="pay">
-                <span class="lordo" style="display:none;">${booking['Guadagno Lordo'] && booking.hasOwnProperty('Guadagno Lordo') ? formatEuro(booking['Guadagno Lordo']) + ' € /' : ''}</span>
-                <span class="netto" style="display:none;">${booking['Guadagno Netto'] && booking.hasOwnProperty('Guadagno Netto') ? formatEuro(booking['Guadagno Netto']) + ' €' : ''}</span>
-                <span class="noLordo" style="display:inline;"> -- /</span>
-                <span class="noNetto" style="display:inline;"> -- €</span>
+                    </details>`}
+                </div>
             </div>
-        `;
-        
-        // Aggiungi l'event listener dopo aver creato l'HTML
-        const payElement = component.querySelector('.pay');
-        payElement.addEventListener('click', function() {
-            showHidePayDetails();
-        });
-        const deleteButton = component.querySelector('.delete-action');
-        if (deleteButton) deleteButton.addEventListener('click', () => deleteBooking(booking, deleteButton));
-        const editButton = component.querySelector('.edit-action');
-        if (editButton) editButton.addEventListener('click', () => showInsertBooking(booking));
- 
+        </details>
+    `;
+    component.querySelector('.booking-name').textContent = booking.Nominativo || '';
+    component.querySelector('.booking-channel').textContent = channels[channel] || booking.channel || 'Altro';
+    const dateFormatter = new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: 'short', year: 'numeric' });
+    ['Check-in', 'Check-out'].forEach((field, index) => {
+        const date = parseItalianDate(booking[field]);
+        component.querySelector(index === 0 ? '.booking-checkin' : '.booking-checkout').textContent =
+            booking[field] && Number.isFinite(date.getTime()) ? dateFormatter.format(date) : '-';
+    });
+    component.querySelector('.booking-guests').textContent = guests || '-';
+    if (phone) {
+        const link = component.querySelector('.booking-contact a');
+        link.textContent = phone;
+        link.href = 'tel:' + phone.replace(/[^\d+]/g, '');
+    }
+    if (note) {
+        component.querySelector('.booking-note-preview').textContent = note;
+        component.querySelector('.booking-notes p').textContent = note;
+    }
+    component.querySelector('.booking-tax-amount').textContent = booking['Tassa di soggiorno']
+        ? formatEuro(booking['Tassa di soggiorno']) + ' €' : 'Non applicata';
+    component.querySelector('.lordo').textContent = booking['Guadagno Lordo'] == null || booking['Guadagno Lordo'] === ''
+        ? '-' : formatEuro(booking['Guadagno Lordo']) + ' €';
+    component.querySelector('.netto').textContent = booking['Guadagno Netto'] == null || booking['Guadagno Netto'] === ''
+        ? '-' : formatEuro(booking['Guadagno Netto']) + ' €';
+    component.querySelector('.pay').addEventListener('click', showHidePayDetails);
+    const deleteButton = component.querySelector('.delete-action');
+    if (deleteButton) deleteButton.addEventListener('click', () => deleteBooking(booking, deleteButton));
+    const editButton = component.querySelector('.edit-action');
+    if (editButton) editButton.addEventListener('click', () => showInsertBooking(booking));
 }
 
 function confirmBookingDeletion(booking) {
@@ -1449,6 +1657,10 @@ function showHidePayDetails() {
     // Verificare se le classi .noLordo sono attualmente nascoste o visibili
     const lordoElements = document.querySelectorAll('.lordo');
     const isCurrentlyHidden = lordoElements.length > 0 && lordoElements[0].style.display === 'none';
+    document.querySelectorAll('.pay').forEach(button => {
+        button.setAttribute('aria-pressed', String(isCurrentlyHidden));
+        button.setAttribute('aria-label', isCurrentlyHidden ? 'Nascondi importi' : 'Mostra importi');
+    });
 
      if (isCurrentlyHidden) {
         // Mostra tutti i dati - visualizzando gli elementi con classi .lordo e .netto e nascondendo quelli con classi .noLordo e .noNetto

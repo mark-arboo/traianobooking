@@ -24,13 +24,16 @@ h1 {
   flex-direction: column;
   align-items: stretch;
   gap: 8px;
+  margin-left: -10px;
+  margin-right: -10px;
+  margin-top: -10px;
 }
 
 .page-header-main {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px;
+  padding: 26px 26px 16px;
   background: #fff;
   border-bottom: 1px solid #e2e8f0;
 }
@@ -158,12 +161,13 @@ h1 {
 }
 
 .booking-form {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 20px;
   max-width: 720px;
   margin: 0 auto;
   padding-bottom: 30px;
+  color: #172b46;
 }
 
 .booking-field {
@@ -240,8 +244,198 @@ h1 {
   outline-color: #c62828;
 }
 
-@media (max-width: 640px) {
-  .booking-form {
+body:has(#insertBookingView.active, #insertExpenseView.active) .page-header-main {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+body:has(#insertBookingView.active, #insertExpenseView.active) .page-header h1 {
+  font-size: 23px;
+}
+
+body:has(#insertBookingView.active, #insertExpenseView.active) :is(#backToListBtn, #backToExpensesBtn) {
+  border-radius: 12px;
+  background: #f3f6fa;
+  color: #64748b;
+}
+
+body:has(#insertBookingView.active, #insertExpenseView.active) :is(#backToListBtn, #backToExpensesBtn):hover {
+  background: #eaf1ff;
+}
+
+.booking-form .booking-form-caption {
+  margin: 0 4px -4px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.booking-form .booking-form-section {
+  min-width: 0;
+}
+
+.booking-form .booking-form-section h2 {
+  margin: 8px 4px 12px;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.booking-form .booking-form-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  min-width: 0;
+  padding: 20px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(23, 43, 70, 0.07);
+}
+
+.booking-form .booking-form-card.booking-field {
+  gap: 8px;
+}
+
+.booking-form .booking-form-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 14px;
+}
+
+.booking-form .booking-form-pair:has(> .booking-field[hidden]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.booking-form .booking-field label {
+  color: #334155;
+  font-size: 12px;
+}
+
+.booking-form .booking-field:has(:required:not(:disabled)) > label::after {
+  content: ' *';
+}
+
+.booking-form .booking-optional {
+  float: right;
+  margin-left: 8px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.booking-form .booking-field input,
+.booking-form .booking-field select,
+.booking-form .booking-field textarea {
+  min-height: 46px;
+  padding: 12px 14px;
+  border-color: #dce4ee;
+  border-radius: 11px;
+  background: #f8fafc;
+  color: #172b46;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.booking-form .booking-field input::placeholder,
+.booking-form .booking-field textarea::placeholder {
+  color: #64748b;
+  opacity: 1;
+}
+
+.booking-form .booking-field textarea {
+  min-height: 96px;
+}
+
+.booking-form .booking-channel-control,
+.booking-form .booking-money-control {
+  position: relative;
+  min-width: 0;
+}
+
+.booking-form .booking-channel-control select {
+  padding-left: 50px;
+}
+
+.booking-form .booking-channel-logo {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  border-radius: 7px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.booking-form .booking-money-control input {
+  padding-right: 36px;
+  appearance: textfield;
+}
+
+.booking-form .booking-money-control input::-webkit-inner-spin-button,
+.booking-form .booking-money-control input::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+.booking-form .booking-money-control > span {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  color: #64748b;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.booking-form .booking-field-hint,
+.booking-form .booking-field-error {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.booking-form .booking-field-hint {
+  color: #64748b;
+}
+
+.booking-form .booking-field-error {
+  color: #b63a2b;
+}
+
+.booking-form .booking-field :is(input, select, textarea):user-invalid,
+.booking-form .booking-field [aria-invalid="true"] {
+  border-color: #c62828;
+  background: #fff4f4;
+}
+
+.booking-form .booking-submit {
+  min-height: 48px;
+  border-radius: 14px;
+  background: #2563eb;
+}
+
+.booking-form .booking-submit:hover {
+  background: #1d4ed8;
+}
+
+.booking-form .booking-submit:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+#bookingSaveStatus,
+#expenseSaveStatus {
+  margin: 0 4px;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 360px) {
+  .booking-form .booking-form-pair {
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -533,7 +727,6 @@ button.active {
 }
 
 .content{
-  margin-top: 20px;
   margin-left: -10px;
   background-color: var(--color-tabbar-background);
   width: 100%;
@@ -542,13 +735,25 @@ button.active {
 
 .search-input {
   width: 100%;
-  padding: 10px;
+  min-height: 44px;
+  padding: 12px;
   margin-bottom: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+  border: 1px solid #e2e8f0;
+  border-radius: 13px;
+  background: #fff;
+  color: #334155;
   font-size: 16px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: none;
   box-sizing: border-box;
+}
+
+.search-input::placeholder {
+  color: #94a3b8;
+}
+
+.search-input:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
 }
 
 .list-actions {
@@ -569,15 +774,15 @@ button.active {
 
 .search-field .fa-search {
   position: absolute;
-  left: 12px;
+  left: 16px;
   top: 50%;
   transform: translateY(-50%);
-  color: #999;
+  color: #94a3b8;
   pointer-events: none;
 }
 
 .search-field .search-input {
-  padding-left: 38px;
+  padding-left: 44px;
 }
 
 @media (max-width: 640px) {
@@ -604,7 +809,99 @@ button.active {
 }
 
 .expense-item {
-  padding: 14px;
+  padding: 20px;
+  margin-bottom: 14px;
+  border: 1px solid #e8edf4;
+  border-radius: 18px;
+  box-shadow: 0 4px 14px rgba(23, 43, 70, 0.07);
+  overflow-wrap: anywhere;
+}
+
+.expense-item::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 20px;
+  width: 4px;
+  height: 42px;
+  border-radius: 2px;
+  background: #cf6841;
+}
+
+.expenses-summary {
+  position: relative;
+  margin: 0px 0 24px;
+  padding: 20px 76px 20px 20px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #bf5700 0%, #c62828 100%);
+  box-shadow: 0 4px 14px rgba(23, 43, 70, 0.07);
+  color: #fff;
+  overflow-wrap: anywhere;
+}
+
+.expenses-summary-label {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.expenses-summary-amount {
+  margin: 0 0 6px;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.expenses-summary-caption {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0.9;
+}
+
+.expenses-summary > i {
+  position: absolute;
+  top: 32px;
+  right: 20px;
+  font-size: 36px;
+  opacity: 0.65;
+}
+
+.expenses-month {
+  margin-bottom: 24px;
+}
+
+.expenses-month-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin: 0 4px 12px;
+}
+
+.expenses-month-heading h2 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: #172b46;
+  font-size: 17px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.expenses-month-heading h2::first-letter {
+  text-transform: uppercase;
+}
+
+.expenses-month-heading p {
+  min-width: 0;
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: right;
   overflow-wrap: anywhere;
 }
 
@@ -613,8 +910,24 @@ button.active {
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
-  gap: 8px 16px;
-  margin-bottom: 10px;
+  gap: 8px 12px;
+}
+
+.expense-category {
+  flex: 1;
+  min-width: 0;
+  color: #9a4c26;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.expense-heading .expense-amount {
+  max-width: 100%;
+  color: #b63a2b;
+  font-size: 21px;
+  white-space: normal;
+  text-align: right;
 }
 
 .expense-amount {
@@ -626,8 +939,35 @@ button.active {
 
 .expense-date,
 .expense-note {
-  color: #666;
-  font-size: 14px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.expense-date {
+  margin: 10px 0 0;
+  font-size: 12px;
+}
+
+.expense-date i,
+.expense-note i {
+  flex: 0 0 16px;
+  color: #94a3b8;
+}
+
+.expense-date span,
+.expense-note span {
+  min-width: 0;
+}
+
+.expense-description {
+  margin: 12px 0 0;
+  color: #172b46;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 .expense-description,
@@ -636,7 +976,10 @@ button.active {
 }
 
 .expense-note {
-  margin-bottom: 0;
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid #edf0f5;
+  font-size: 13px;
 }
 
 .expenses-status {
@@ -736,20 +1079,299 @@ button.active {
   color: #c62828;
 }
 
-.pay {
-  width: 50%;
+.booking-summary-card.booking-item,
+.booking-summary-card.booking-card {
+  --booking-accent: #475569;
+  --booking-tint: #eef2f6;
+  padding: 0;
+  margin-bottom: 14px;
+  border: 1px solid #e8edf4;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(23, 43, 70, 0.07);
+  color: #334155;
+  overflow-wrap: anywhere;
+}
+
+.booking-summary-card[data-channel="airbnb"] {
+  --booking-accent: #bd4053;
+  --booking-tint: #fff0f2;
+}
+
+.booking-summary-card[data-channel="booking"] {
+  --booking-accent: #2458b5;
+  --booking-tint: #eaf1ff;
+}
+
+.booking-summary-card.booking-past {
+  --booking-accent: #64748b;
+  --booking-tint: #eef2f6;
+}
+
+.booking-overview {
   position: relative;
-  text-align: left;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  align-items: center;
+  padding: 16px 16px 16px 20px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.booking-overview::-webkit-details-marker,
+.booking-notes > summary::-webkit-details-marker {
+  display: none;
+}
+
+.booking-overview::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 20px;
+  width: 4px;
+  height: 54px;
+  border-radius: 2px;
+  background: var(--booking-accent);
+}
+
+.booking-name {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
   font-size: 20px;
-  font-weight: bold;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #172b46;
 }
 
-.lordo, .noLordo {
-  color: #e74c3c; 
+.booking-overview .booking-chevron {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: #64748b;
+  font-size: 22px;
+  pointer-events: none;
 }
 
-.netto, .noNetto {
-  color: #27ae60; 
+.booking-disclosure[open] > .booking-overview .booking-chevron::before {
+  transform: rotate(180deg);
+}
+
+.booking-channel {
+  grid-column: 1;
+  justify-self: start;
+  padding: 4px 9px;
+  border-radius: 8px;
+  background: var(--booking-tint);
+  color: var(--booking-accent);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.booking-dates {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+.booking-dates > span:nth-child(3) {
+  text-align: right;
+}
+
+.booking-date-arrow {
+  color: #94a3b8;
+}
+
+.booking-date-label,
+.booking-nights {
+  display: none;
+}
+
+.booking-disclosure[open] > .booking-overview .booking-dates {
+  padding: 14px;
+  border-radius: 12px;
+  background: #f8fafc;
+  font-size: 17px;
+  font-weight: 600;
+  color: #172b46;
+}
+
+.booking-disclosure[open] .booking-date-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+}
+
+.booking-disclosure[open] .booking-nights {
+  display: block;
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.booking-expanded {
+  padding: 0 20px 16px;
+}
+
+.booking-guests-label,
+.booking-amount-label {
+  margin: 0 0 8px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.booking-guests {
+  margin: 0 0 16px;
+  font-size: 16px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.booking-contact {
+  padding-top: 16px;
+  border-top: 1px solid #edf0f5;
+  font-size: 14px;
+}
+
+.booking-contact a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.booking-notes {
+  margin: 12px 0;
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.booking-notes > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.booking-notes p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.booking-note-preview {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.booking-note-heading,
+.booking-notes[open] .booking-note-preview {
+  display: none;
+}
+
+.booking-notes[open] .booking-note-heading {
+  display: inline;
+}
+
+.booking-tax {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 18px 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.booking-tax-amount {
+  text-align: right;
+  color: #334155;
+  font-weight: 600;
+}
+
+.booking-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #edf0f5;
+}
+
+.pay {
+  display: flex;
+  justify-content: space-between;
+  flex: 1;
+  min-width: 0;
+  gap: 8px;
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #172b46;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.booking-amount-column {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.booking-amount-column:last-child {
+  text-align: right;
+}
+
+.netto {
+  color: #167447;
+}
+
+.booking-footer .booking-actions {
+  position: relative;
+  top: auto;
+  right: auto;
+  flex: 0 0 44px;
+}
+
+.booking-footer .booking-actions-toggle {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+}
+
+.booking-footer .booking-actions-menu {
+  top: auto;
+  bottom: calc(100% + 6px);
+  border-radius: 13px;
+}
+
+.booking-overview:focus-visible,
+.booking-notes > summary:focus-visible,
+.pay:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  border-radius: 12px;
 }
 
 /* Stili per il calendario */
@@ -783,41 +1405,76 @@ button.active {
   background-color: #0056b3;
 }
 
+.calendar-surface {
+  padding: 12px;
+  border: 1px solid #e8edf4;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(23, 43, 70, 0.07);
+}
+
+#calendarView .calendar-header {
+  gap: 8px;
+  padding: 0 0 16px;
+}
+
+#calendarView .calendar-header h2 {
+  min-width: 0;
+  color: #172b46;
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+}
+
+#calendarView .nav-button {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 24px;
+}
+
+#calendarView .nav-button:hover {
+  background: #eaf1ff;
+}
+
 .calendar-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 5px;
-  margin-bottom: 20px;
-  background-color: #FFF;
-  padding: 5px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
 }
 
 .day-header {
-  background-color: #007bff;
-  color: white;
+  color: #64748b;
   text-align: center;
-  padding: 10px;
-  font-weight: bold;
-  border-radius: 5px;
+  padding: 6px 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
 }
 
 .calendar-day {
-  background-color: #fff;
-  height: 50px;
-  padding: 5px;
-  border-radius: 5px;
+  min-width: 0;
+  min-height: 42px;
+  aspect-ratio: 1;
+  max-height: 60px;
+  padding: 0;
+  border: 0;
+  border-radius: 11px;
+  background: #f1f5f9;
+  color: #334155;
+  font: inherit;
   cursor: pointer;
-  position: relative;
-  transition: transform 0.2s, box-shadow 0.2s;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
 
-.calendar-day:hover:not(.empty) {
-  transform: scale(1.05);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+.calendar-day:hover:not(.empty):not(:disabled) {
+  box-shadow: inset 0 0 0 1px #94a3b8;
 }
 
 .calendar-day.empty {
@@ -826,59 +1483,99 @@ button.active {
 }
 
 .calendar-day.occupied {
-  background-color: #e74c3c;
-  color: white;
-}
-
-.calendar-day.checkout {
-  background-color: #f39c12;
-  /* background-color: #27ae60; */
-  color: white;
+  background: #f5aaaa;
 }
 
 .calendar-day.free {
-  background-color: #27ae60;
-  color: white;
+  background: #afe0b9;
 }
 
-.checkout-occupied {
-    background: linear-gradient(120deg, #ff9800 50%, #f44336 50%);
-    /* Gradiente arancione-rosso */
+.calendar-day.checkout-occupied {
+  background: linear-gradient(120deg, #ffd093 50%, #f5aaaa 50%);
 }
 
-.checkout-free {
-    background: linear-gradient(120deg, #ff9800 50%, #4caf50 50%);
-    /* Gradiente arancione-verde */
+.calendar-day.checkout-free {
+  background: #ffd093;
+}
+
+.calendar-day.unavailable {
+  color: #94a3b8;
+  cursor: default;
 }
 
 .day-number {
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 5px;
+  font-size: 15px;
+  font-weight: 600;
 }
 
-.calendar-day.today {
-  border: 3px solid #007bff;
-  box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+.calendar-day.today .day-number {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.calendar-day.selected,
+.calendar-day:focus-visible,
+#calendarView .nav-button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
 }
 
 .day-details {
-  margin-top: 20px;
+  margin-top: 24px;
+  scroll-margin-top: 16px;
+}
+
+.day-details:empty {
+  display: none;
 }
 
 .day-details h3 {
-  font-size: 20px;
-  font-weight: bold;
-  margin-bottom: 15px;
+  margin: 0 0 6px;
+  color: #172b46;
+  font-size: 19px;
+  font-weight: 600;
 }
 
-.no-bookings {
-  text-align: center;
-  color: #666;
-  font-style: italic;
-  padding: 20px;
-  background-color: #fff;
-  border-radius: 5px;
+.day-details h3::first-letter {
+  text-transform: uppercase;
+}
+
+.calendar-day-summary,
+.calendar-data-status {
+  margin: 0 0 16px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.calendar-data-status {
+  margin: 16px 0 0;
+}
+
+.booking-channel-row {
+  grid-column: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.booking-stay-status {
+  padding: 4px 9px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.booking-stay-status.arrival {
+  background: #e9f6ec;
+  color: #27784a;
+}
+
+.booking-stay-status.departure {
+  background: #fff0dc;
+  color: #926311;
 }
 
 .booking-card {
@@ -892,188 +1589,323 @@ button.active {
 }
 
 /* Stili per la vista grafico/report */
-.stats-container {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.stats-card {
-  background-color: var(--color-tabbar-background);
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.stats-card h3 {
-  font-size: 22px;
-  font-weight: bold;
-  margin-bottom: 20px;
-  text-align: center;
-  color: #333;
-}
-
-.yearly-card {
-  padding: 0;
-  overflow: hidden;
-}
-
-.revenue-item {
-  display: flex;
-  align-items: center;
-  background-color: #f9f9f9;
-  padding: 15px;
-  margin-bottom: 15px;
-  border-radius: 5px;
-  border-left: 4px solid #007bff;
-}
-
-.channel-logo {
-  width: 50px;
-  height: 50px;
-  margin-right: 15px;
-  object-fit: contain;
-}
-
-.profit-expenses {
-  border-left-color: #c62828;
-}
-
-.profit-expenses .expense-icon {
-  display: grid;
-  place-items: center;
-  flex: 0 0 50px;
-  height: 50px;
-  margin-right: 15px;
-  font-size: 32px;
-}
-
-.profit-expenses .channel-info {
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.channel-info {
-  flex: 1;
+#graphicView .profit-month-nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.channel-name {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-}
-
-.channel-revenue,
-.profit-expenses .expense-amount {
-  font-size: 22px;
-  font-weight: bold;
-  margin: 0;
-}
-
-.channel-revenue {
-  color: #27ae60;
-}
-
-.revenue-total {
-  background-color: #007bff;
-  color: white;
-  padding: 20px;
-  border-radius: 5px;
-  margin-top: 25px;
-  margin-bottom: 15px;
-  display: flex;
-  flex-wrap: wrap;
   gap: 8px;
-  justify-content: space-between;
-  align-items: center;
+  padding: 12px;
 }
 
-.total-label {
-  font-size: 20px;
-  font-weight: bold;
-  margin: 0;
-}
-
-.total-revenue {
-  font-size: 28px;
-  font-weight: bold;
-  margin: 0;
-}
-
-.booking-count {
-  text-align: center;
-  font-size: 16px;
-  color: #666;
-  padding: 10px;
-}
-
-.booking-count strong {
-  color: #007bff;
-  font-size: 20px;
-}
-
-.yearly-revenue {
-  display: flex;
-  align-items: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 25px;
-  border-radius: 5px;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-}
-
-.yearly-revenue i {
-  font-size: 40px;
-  margin-right: 20px;
-  opacity: 0.9;
-}
-
-.yearly-expenses {
-  margin-top: 16px;
-  background: linear-gradient(135deg, #bf5700 0%, #c62828 100%);
-  color: #fff;
-  box-shadow: none;
-}
-
-.yearly-net {
-  margin-top: 16px;
-  background: linear-gradient(135deg, #2e9b55 0%, #146b3a 100%);
-  box-shadow: none;
-}
-
-.yearly-expenses .expense-amount {
-  color: #fff;
-  font-size: 32px;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  text-shadow: none;
-}
-
-.yearly-expenses .yearly-info {
+#graphicView .profit-month-nav h2 {
   min-width: 0;
+  margin: 0;
+  color: #172b46;
+  font-size: 17px;
+  font-weight: 600;
+  text-align: center;
 }
 
-.yearly-info {
-  flex: 1;
+#graphicView .nav-button {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 12px;
+  background: #f3f6fa;
+  color: #64748b;
+  font-size: 24px;
+}
+
+#graphicView .nav-button:hover {
+  background: #eaf1ff;
+}
+
+#graphicView .nav-button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+#graphicView .stats-container {
   display: flex;
   flex-direction: column;
+  gap: 14px;
+  color: #172b46;
 }
 
-.yearly-label {
-  font-size: 14px;
-  font-weight: 500;
-  margin: 0 0 5px 0;
-  opacity: 0.95;
+#graphicView .stats-card {
+  min-width: 0;
+  padding: 20px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(23, 43, 70, 0.07);
+  overflow-wrap: anywhere;
+}
+
+#graphicView .profit-label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.yearly-amount {
-  font-size: 32px;
-  font-weight: bold;
+#graphicView .profit-month-summary {
+  margin: 0 20px;
+  padding: 16px 0;
+  border-top: 1px solid #edf0f5;
+}
+
+#graphicView .profit-month-card {
+  padding: 0;
+}
+
+#graphicView .profit-month-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+#graphicView .profit-month-heading .profit-label {
+  color: #64748b;
+  letter-spacing: 0.8px;
+}
+
+#graphicView .total-revenue {
+  margin: 10px 0 6px;
+  color: #17664e;
+  font-size: 36px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+#graphicView .profit-month-caption {
   margin: 0;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+#graphicView .booking-count {
+  display: inline-block;
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+#graphicView .profit-month-totals {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0 20px;
+  padding: 16px 0 20px;
+  border-top: 1px solid #edf0f5;
+}
+
+#graphicView .profit-month-totals > div {
+  min-width: 0;
+}
+
+#graphicView .profit-month-income {
+  padding-right: 16px;
+}
+
+#graphicView .profit-month-expenses {
+  padding-left: 16px;
+  border-left: 1px solid #edf0f5;
+}
+
+#graphicView .profit-month-totals .profit-label {
+  color: #64748b;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+#graphicView .profit-month-totals .profit-label::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: #2563eb;
+}
+
+#graphicView .profit-month-expenses .profit-label::before {
+  background: #b63a2b;
+}
+
+#graphicView .profit-month-amount {
+  margin: 10px 0 0;
+  color: #2563eb;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+#graphicView .profit-month-expenses .profit-month-amount {
+  color: #b63a2b;
+}
+
+#graphicView .profit-section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin: 10px 4px 12px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+#graphicView .profit-section-title span {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+#graphicView .profit-channels {
+  padding: 4px 20px;
+}
+
+#graphicView .revenue-item {
+  --channel-color: #64748b;
+  padding: 18px 0;
+}
+
+#graphicView .revenue-item + .revenue-item {
+  border-top: 1px solid #edf0f5;
+}
+
+#graphicView .profit-channel-booking {
+  --channel-color: #2563eb;
+}
+
+#graphicView .profit-channel-airbnb {
+  --channel-color: #df5278;
+}
+
+#graphicView .profit-channel-track {
+  height: 7px;
+  margin-top: 12px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #f1f5f9;
+}
+
+#graphicView .profit-channel-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--channel-color);
+}
+
+#graphicView .channel-info {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+#graphicView .channel-name {
+  margin: 0;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+#graphicView .channel-name::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 10px;
+  border-radius: 50%;
+  background: var(--channel-color);
+}
+
+#graphicView .channel-revenue {
+  margin: 0 0 0 auto;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+#graphicView .yearly-card {
+  background: linear-gradient(135deg, #213e68, #172b46);
+  color: #fff;
+}
+
+#graphicView .yearly-revenue {
+  min-width: 0;
+}
+
+#graphicView .profit-year-totals {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+#graphicView .profit-year-totals > div:first-child {
+  padding-right: 16px;
+}
+
+#graphicView .profit-year-totals .yearly-expenses {
+  padding-left: 16px;
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+#graphicView .yearly-label {
+  margin: 0;
+  color: #c3d4eb;
+  font-size: 11px;
+}
+
+#graphicView .yearly-amount {
+  margin: 10px 0 0;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+#graphicView .yearly-net {
+  position: relative;
+}
+
+#graphicView .yearly-net > i {
+  position: absolute;
+  top: 0;
+  right: 0;
+  color: #93b9ec;
+  font-size: 26px;
+}
+
+#graphicView .yearly-net .yearly-label {
+  padding-right: 46px;
+  color: #dbeafe;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+}
+
+#graphicView .yearly-net .yearly-amount {
+  margin-top: 18px;
+  font-size: 30px;
+}
+
+#graphicView .profit-footnote {
+  margin: 0 4px;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.5;
 }
