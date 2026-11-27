@@ -1568,9 +1568,10 @@ button.active {
   font-weight: 600;
 }
 
-.booking-stay-status.arrival {
-  background: #e9f6ec;
-  color: #27784a;
+.booking-stay-status.arrival,
+.booking-stay-status.staying {
+  background: #f5aaaa;
+  color: #7f1d1d;
 }
 
 .booking-stay-status.departure {
